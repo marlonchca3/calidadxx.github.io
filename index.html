@@ -176,6 +176,45 @@
       gap: 8px;
     }
 
+    .auth-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .auth-status {
+      color: #cde1ff;
+      font-size: 12px;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(8, 23, 49, 0.75);
+    }
+
+    .auth-btn {
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: rgba(11, 36, 78, 0.95);
+      color: #dcebff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .auth-btn:hover {
+      background: rgba(26, 74, 148, 0.95);
+    }
+
+    .readonly-note {
+      margin: 8px 0 2px;
+      color: #ffe2a2;
+      font-size: 12px;
+      display: none;
+    }
+
     .grid-kpi {
       display: grid;
       gap: 12px;
@@ -872,6 +911,11 @@
           <div class="chip"><span id="chip-aircraft">PNP-501</span> <span>▼</span></div>
           <div class="chip">01/07/2026 <span>◷</span></div>
           <div class="chip">Notificaciones <span>●</span></div>
+          <div class="auth-box">
+            <span class="auth-status" id="auth-status">No autenticado</span>
+            <button class="auth-btn" id="google-signin-btn" type="button">Iniciar con Google</button>
+            <button class="auth-btn" id="google-signout-btn" type="button" style="display:none;">Cerrar sesion</button>
+          </div>
         </div>
       </header>
 
@@ -888,6 +932,7 @@
               <input id="new-aircraft-code" type="text" maxlength="30" placeholder="Codigo (ej. PNP-700)">
               <input id="new-aircraft-name" type="text" maxlength="80" placeholder="Nombre (ej. Mi-171Sh)">
               <button class="table-btn" type="submit">Crear aeronave</button>
+              <p class="readonly-note" id="readonly-aircraft-note">Solo el propietario puede crear aeronaves.</p>
             </form>
           </div>
         </section>
@@ -1012,6 +1057,7 @@
             <button class="table-btn" id="reset-db-btn" type="button">Restaurar datos</button>
           </div>
         </div>
+        <p class="readonly-note" id="readonly-db-note" style="margin: 0 14px 10px;">Modo solo lectura: solo el propietario puede editar la base de datos.</p>
         <div class="table-wrap">
           <table id="component-table">
             <thead>
@@ -1060,9 +1106,21 @@
       </footer>
     </main>
   </div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
   <script>
     const DB_STORAGE_KEY = "sr_aero_fleet_v1";
     const TODAY = new Date("2026-07-01T00:00:00");
+    const OWNER_EMAIL = "marlonchca3@gmail.com";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRAZZ4VafNNIi3G9_USyARksFqgKYE5Fo",
+      authDomain: "calidadddddd.firebaseapp.com",
+      projectId: "calidadddddd",
+      storageBucket: "calidadddddd.firebasestorage.app",
+      messagingSenderId: "532433890487",
+      appId: "1:532433890487:web:d7011a757f953c03363132",
+      measurementId: "G-60JGPFZ5TL"
+    };
     const defaultRowsPnp501 = [
       {
         component: "Mi-17 MTV-1",
@@ -1156,9 +1214,16 @@
     }
 
     let fleet = loadFleet();
+  let currentUser = null;
+  let isOwner = false;
+  let authReady = false;
 
     function saveFleet() {
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(fleet));
+    }
+
+    function isFirebaseConfigReady() {
+      return Object.values(firebaseConfig).every((value) => value && !String(value).startsWith("REEMPLAZAR_"));
     }
 
     function getCurrentAircraft() {
@@ -1431,16 +1496,17 @@
       tbody.innerHTML = rows.map((row, index) => {
         const status = getStatus(row);
         const statusClass = status === "CRITICO" ? "critical" : status === "ALERTA" ? "warn" : "ok";
+        const disabled = isOwner ? "" : "disabled";
         return `
           <tr>
-            <td><input class="cell-input" data-key="component" data-index="${index}" value="${escapeHtml(row.component)}"></td>
-            <td><input class="cell-input" data-key="series" data-index="${index}" value="${escapeHtml(row.series)}"></td>
-            <td><input class="cell-input" data-key="workshop" data-index="${index}" value="${escapeHtml(row.workshop)}"></td>
-            <td><input class="cell-input" data-key="overhaul" data-index="${index}" value="${escapeHtml(row.overhaul)}"></td>
-            <td><input class="cell-input" data-key="assigned" data-index="${index}" value="${escapeHtml(row.assigned)}"></td>
-            <td><input class="cell-input" data-key="consumed" data-index="${index}" value="${escapeHtml(row.consumed)}"></td>
-            <td><input class="cell-input" data-key="remaining" data-index="${index}" value="${escapeHtml(row.remaining)}"></td>
-            <td><input class="cell-input" data-key="due" data-index="${index}" value="${escapeHtml(row.due)}"></td>
+            <td><input class="cell-input" data-key="component" data-index="${index}" value="${escapeHtml(row.component)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="series" data-index="${index}" value="${escapeHtml(row.series)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="workshop" data-index="${index}" value="${escapeHtml(row.workshop)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="overhaul" data-index="${index}" value="${escapeHtml(row.overhaul)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="assigned" data-index="${index}" value="${escapeHtml(row.assigned)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="consumed" data-index="${index}" value="${escapeHtml(row.consumed)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="remaining" data-index="${index}" value="${escapeHtml(row.remaining)}" ${disabled}></td>
+            <td><input class="cell-input" data-key="due" data-index="${index}" value="${escapeHtml(row.due)}" ${disabled}></td>
             <td><span class="status ${statusClass}">${status}</span></td>
           </tr>
         `;
@@ -1454,6 +1520,9 @@
         return;
       }
       tbody.addEventListener("change", (event) => {
+        if (!isOwner) {
+          return;
+        }
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) {
           return;
@@ -1476,6 +1545,10 @@
       const resetButton = document.getElementById("reset-db-btn");
       if (addRowButton) {
         addRowButton.addEventListener("click", () => {
+          if (!isOwner) {
+            window.alert("Solo el propietario puede editar.");
+            return;
+          }
           const currentAircraft = getCurrentAircraft();
           if (!currentAircraft) {
             return;
@@ -1497,6 +1570,10 @@
       }
       if (resetButton) {
         resetButton.addEventListener("click", () => {
+          if (!isOwner) {
+            window.alert("Solo el propietario puede editar.");
+            return;
+          }
           const accepted = window.confirm("Deseas restaurar la base de datos original?");
           if (!accepted) {
             return;
@@ -1523,6 +1600,11 @@
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();
+
+        if (!isOwner) {
+          window.alert("Solo el propietario puede crear aeronaves.");
+          return;
+        }
 
         const code = codeInput.value.trim().toUpperCase();
         const name = nameInput.value.trim();
@@ -1556,6 +1638,98 @@
       });
     }
 
+    function applyPermissionUI() {
+      const addRowButton = document.getElementById("add-row-btn");
+      const resetButton = document.getElementById("reset-db-btn");
+      const form = document.getElementById("aircraft-form");
+      const dbNote = document.getElementById("readonly-db-note");
+      const aircraftNote = document.getElementById("readonly-aircraft-note");
+      const signinBtn = document.getElementById("google-signin-btn");
+      const signoutBtn = document.getElementById("google-signout-btn");
+      const authStatus = document.getElementById("auth-status");
+
+      if (addRowButton) addRowButton.disabled = !isOwner;
+      if (resetButton) resetButton.disabled = !isOwner;
+
+      if (form) {
+        const formInputs = form.querySelectorAll("input, button");
+        formInputs.forEach((element) => {
+          element.disabled = !isOwner;
+        });
+      }
+
+      if (dbNote) dbNote.style.display = isOwner ? "none" : "block";
+      if (aircraftNote) aircraftNote.style.display = isOwner ? "none" : "block";
+
+      if (signinBtn) signinBtn.style.display = currentUser ? "none" : "inline-block";
+      if (signoutBtn) signoutBtn.style.display = currentUser ? "inline-block" : "none";
+
+      if (authStatus) {
+        if (!authReady) {
+          authStatus.textContent = "Configurar Firebase";
+        } else if (!currentUser) {
+          authStatus.textContent = "No autenticado";
+        } else if (isOwner) {
+          authStatus.textContent = `Editor: ${currentUser.email || "owner"}`;
+        } else {
+          authStatus.textContent = `Solo lectura: ${currentUser.email || "usuario"}`;
+        }
+      }
+    }
+
+    function bindAuthButtons() {
+      const signinBtn = document.getElementById("google-signin-btn");
+      const signoutBtn = document.getElementById("google-signout-btn");
+
+      if (signinBtn) {
+        signinBtn.addEventListener("click", async () => {
+          if (!authReady) {
+            window.alert("Configura firebaseConfig y OWNER_EMAIL en el archivo index.html.");
+            return;
+          }
+          try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await firebase.auth().signInWithPopup(provider);
+          } catch {
+            window.alert("No se pudo iniciar sesion con Google.");
+          }
+        });
+      }
+
+      if (signoutBtn) {
+        signoutBtn.addEventListener("click", async () => {
+          if (!authReady) {
+            return;
+          }
+          await firebase.auth().signOut();
+        });
+      }
+    }
+
+    function initAuth() {
+      if (!window.firebase || !isFirebaseConfigReady()) {
+        authReady = false;
+        currentUser = null;
+        isOwner = false;
+        applyPermissionUI();
+        renderTable();
+        return;
+      }
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+
+      authReady = true;
+      firebase.auth().onAuthStateChanged((user) => {
+        currentUser = user;
+        const email = (user && user.email ? user.email : "").toLowerCase();
+        isOwner = email === OWNER_EMAIL.toLowerCase();
+        applyPermissionUI();
+        renderTable();
+      });
+    }
+
     function bindMenuNavigation() {
       const menuItems = document.querySelectorAll(".menu-item[data-target]");
       menuItems.forEach((item) => {
@@ -1584,12 +1758,15 @@
       });
     }
 
+    bindAuthButtons();
     bindAircraftCreation();
     bindMenuNavigation();
     bindTableEditing();
     bindTableButtons();
     renderAircraftIdentity();
     renderAircraftList();
+    initAuth();
+    applyPermissionUI();
     renderTable();
   </script>
 </body>
