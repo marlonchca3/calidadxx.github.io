@@ -466,6 +466,135 @@
       border-bottom: 1px solid var(--line);
     }
 
+    .table-tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .table-btn {
+      border: 1px solid var(--line-strong);
+      background: rgba(12, 36, 74, 0.9);
+      color: #d7e6ff;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .table-btn:hover {
+      background: rgba(26, 74, 148, 0.9);
+      border-color: rgba(138, 184, 255, 0.65);
+    }
+
+    .table-btn.danger {
+      background: rgba(116, 20, 34, 0.85);
+      border-color: rgba(255, 121, 121, 0.5);
+      color: #ffd3d3;
+    }
+
+    .table-btn.danger:hover {
+      background: rgba(162, 28, 49, 0.9);
+      border-color: rgba(255, 150, 150, 0.65);
+    }
+
+    .cell-input {
+      width: 100%;
+      min-width: 90px;
+      border: 1px solid rgba(125, 169, 237, 0.2);
+      background: rgba(5, 18, 40, 0.82);
+      color: #e7f1ff;
+      border-radius: 6px;
+      padding: 6px 7px;
+      font: inherit;
+    }
+
+    .cell-input:focus {
+      outline: none;
+      border-color: rgba(104, 165, 255, 0.8);
+      box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.24);
+    }
+
+    .jump-highlight {
+      animation: jump-highlight 1.2s ease;
+    }
+
+    .view {
+      display: block;
+    }
+
+    .view.hidden {
+      display: none;
+    }
+
+    .aircrafts-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 12px;
+    }
+
+    .aircraft-list {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    .aircraft-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(160deg, rgba(12, 31, 62, 0.88), rgba(7, 19, 41, 0.92));
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .aircraft-card h3 {
+      margin: 0;
+      font-family: Rajdhani, sans-serif;
+      font-size: 22px;
+    }
+
+    .aircraft-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .aircraft-card.active {
+      border-color: rgba(104, 165, 255, 0.8);
+      box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.25);
+    }
+
+    .aircraft-form {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .aircraft-form input {
+      border: 1px solid rgba(125, 169, 237, 0.25);
+      background: rgba(5, 18, 40, 0.82);
+      color: #e7f1ff;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font: inherit;
+    }
+
+    .aircraft-form input:focus {
+      outline: none;
+      border-color: rgba(104, 165, 255, 0.8);
+      box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.24);
+    }
+
+    .empty-note {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 16px 4px 6px;
+    }
+
     .table-wrap {
       overflow-x: auto;
     }
@@ -522,6 +651,12 @@
       background: rgba(255, 79, 79, 0.2);
     }
 
+    .status.warn {
+      color: #ffe2a2;
+      border-color: rgba(255, 177, 0, 0.7);
+      background: rgba(255, 177, 0, 0.2);
+    }
+
     .stats-row {
       display: grid;
       gap: 10px;
@@ -567,6 +702,18 @@
       to {
         opacity: 1;
         transform: translateY(0);
+      }
+    }
+
+    @keyframes jump-highlight {
+      0% {
+        box-shadow: 0 0 0 rgba(70, 151, 255, 0);
+      }
+      40% {
+        box-shadow: 0 0 0 3px rgba(70, 151, 255, 0.65);
+      }
+      100% {
+        box-shadow: 0 0 0 rgba(70, 151, 255, 0);
       }
     }
 
@@ -635,6 +782,10 @@
 
       .stats-row {
         grid-template-columns: repeat(3, minmax(120px, 1fr));
+      }
+
+      .aircrafts-layout {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -705,16 +856,16 @@
     <aside class="sidebar">
       <div class="brand">
         <h2 class="brand-title">SR AERO</h2>
-        <p class="brand-sub">PNP-501</p>
+        <p class="brand-sub" id="brand-code">PNP-501</p>
       </div>
       <nav class="menu">
-        <a class="menu-item active" href="#">Dashboard</a>
-        <a class="menu-item" href="#">Aeronaves</a>
-        <a class="menu-item" href="#">Componentes</a>
-        <a class="menu-item" href="#">Base de datos</a>
-        <a class="menu-item" href="#">Alertas</a>
-        <a class="menu-item" href="#">Calendario</a>
-        <a class="menu-item" href="#">Historial</a>
+        <a class="menu-item active" href="#dashboard" data-target="dashboard">Dashboard</a>
+        <a class="menu-item" href="#aeronaves" data-target="aeronaves">Aeronaves</a>
+        <a class="menu-item" href="#dashboard" data-target="dashboard">Componentes</a>
+        <a class="menu-item" href="#base-datos" data-target="base-datos">Base de datos</a>
+        <a class="menu-item" href="#dashboard" data-target="dashboard">Alertas</a>
+        <a class="menu-item" href="#dashboard" data-target="dashboard">Calendario</a>
+        <a class="menu-item" href="#dashboard" data-target="dashboard">Historial</a>
       </nav>
       <div class="profile">
         <b>Marlon Chuquino</b>
@@ -726,46 +877,64 @@
       <header class="topbar">
         <div class="title-wrap">
           <h1>Sistema de Gestion de Recursos Aeronauticos</h1>
-          <p>Dashboard tecnico · PNP-501</p>
+          <p id="title-sub">Dashboard tecnico · PNP-501</p>
         </div>
         <div class="top-actions">
-          <div class="chip">Mi-17 MTV-1 (96019) <span>▼</span></div>
+          <div class="chip"><span id="chip-aircraft">PNP-501</span> <span>▼</span></div>
           <div class="chip">01/07/2026 <span>◷</span></div>
           <div class="chip">Notificaciones <span>●</span></div>
         </div>
       </header>
 
-      <section class="grid-kpi">
+      <section class="view hidden" id="aeronaves">
+        <section class="panel">
+          <h2>Gestion de Aeronaves</h2>
+          <p class="panel-sub">Selecciona una aeronave operativa o crea una nueva con base de datos vacia.</p>
+          <div class="aircrafts-layout">
+            <div>
+              <div class="aircraft-list" id="aircraft-list"></div>
+              <p class="empty-note" id="aircraft-empty-note" style="display:none;">No hay aeronaves registradas.</p>
+            </div>
+            <form class="aircraft-form" id="aircraft-form">
+              <input id="new-aircraft-code" type="text" maxlength="30" placeholder="Codigo (ej. PNP-700)">
+              <input id="new-aircraft-name" type="text" maxlength="80" placeholder="Nombre (ej. Mi-171Sh)">
+              <button class="table-btn" type="submit">Crear aeronave</button>
+            </form>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid-kpi view" id="dashboard">
         <article class="kpi">
           <p class="kpi-title">Total Componentes</p>
-          <p class="kpi-value">5</p>
-          <p class="kpi-meta"><span>Registrados</span><strong>100%</strong></p>
+          <p class="kpi-value" id="kpi-total">0</p>
+          <p class="kpi-meta"><span>Registrados</span><strong id="kpi-total-pct">0%</strong></p>
         </article>
         <article class="kpi">
           <p class="kpi-title">Criticos / Overhaul</p>
-          <p class="kpi-value">3</p>
-          <p class="kpi-meta"><span>Requieren atencion</span><strong>60%</strong></p>
+          <p class="kpi-value" id="kpi-critical">0</p>
+          <p class="kpi-meta"><span>Requieren atencion</span><strong id="kpi-critical-pct">0%</strong></p>
         </article>
         <article class="kpi">
           <p class="kpi-title">Alertas Preventivas</p>
-          <p class="kpi-value">0</p>
-          <p class="kpi-meta"><span>Sin alertas</span><strong>0%</strong></p>
+          <p class="kpi-value" id="kpi-alert">0</p>
+          <p class="kpi-meta"><span>Seguimiento cercano</span><strong id="kpi-alert-pct">0%</strong></p>
         </article>
         <article class="kpi">
           <p class="kpi-title">En Condiciones</p>
-          <p class="kpi-value">2</p>
-          <p class="kpi-meta"><span>Operativos</span><strong>40%</strong></p>
+          <p class="kpi-value" id="kpi-ok">0</p>
+          <p class="kpi-meta"><span>Operativos</span><strong id="kpi-ok-pct">0%</strong></p>
         </article>
         <article class="kpi">
           <p class="kpi-title">Riesgo Global</p>
           <div class="kpi-risk">
-            <div class="ring"><span>60%</span></div>
-            <p class="kpi-meta"><strong style="color: var(--danger); font-size: 20px;">Alto</strong></p>
+            <div class="ring" id="kpi-risk-ring"><span id="kpi-risk-value">0%</span></div>
+            <p class="kpi-meta"><strong id="kpi-risk-label" style="color: var(--ok); font-size: 20px;">Bajo</strong></p>
           </div>
         </article>
       </section>
 
-      <section class="main-grid">
+      <section class="main-grid view" id="main-grid-view">
         <article class="panel">
           <h2>Aeronave Seleccionada</h2>
           <p class="panel-sub">Serie 96019</p>
@@ -846,13 +1015,16 @@
         </article>
       </section>
 
-      <section class="panel table-panel">
+      <section class="panel table-panel view" id="base-datos">
         <div class="table-title">
-          <h2>Estado de Componentes</h2>
-          <span class="panel-sub">Monitoreo tecnico consolidado</span>
+          <h2>Base de Datos de Componentes</h2>
+          <div class="table-tools">
+            <button class="table-btn" id="add-row-btn" type="button">Agregar fila</button>
+            <button class="table-btn" id="reset-db-btn" type="button">Restaurar datos</button>
+          </div>
         </div>
         <div class="table-wrap">
-          <table>
+          <table id="component-table">
             <thead>
               <tr>
                 <th>Componente</th>
@@ -866,87 +1038,31 @@
                 <th>Estado</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>Mi-17 MTV-1</td>
-                <td>96019</td>
-                <td>Helicentro</td>
-                <td>20/03/2020</td>
-                <td>2,000 h</td>
-                <td>860 h</td>
-                <td>1,140 h</td>
-                <td>20/03/2028</td>
-                <td><span class="status ok">OK</span></td>
-              </tr>
-              <tr>
-                <td>Motor 1 TV3-117BM</td>
-                <td>7087882200433</td>
-                <td>URAL</td>
-                <td>12/04/2016</td>
-                <td>1,500 h</td>
-                <td>828.5 h</td>
-                <td>671.5 h</td>
-                <td>12/04/2026</td>
-                <td><span class="status critical">CRITICO</span></td>
-              </tr>
-              <tr>
-                <td>Motor 2 TV3-117BM</td>
-                <td>7087884000357</td>
-                <td>BORYSFEN</td>
-                <td>21/04/2016</td>
-                <td>1,500 h</td>
-                <td>828.5 h</td>
-                <td>671.5 h</td>
-                <td>21/04/2026</td>
-                <td><span class="status critical">CRITICO</span></td>
-              </tr>
-              <tr>
-                <td>AI-9B</td>
-                <td>7080924200355</td>
-                <td>OOO ARP Motor</td>
-                <td>16/07/2020</td>
-                <td>600 arr</td>
-                <td>694 arr</td>
-                <td>-94 arr</td>
-                <td>16/07/2028</td>
-                <td><span class="status critical">CRITICO</span></td>
-              </tr>
-              <tr>
-                <td>VR-14</td>
-                <td>L0701003MP2</td>
-                <td>AO REDUCTOR PM</td>
-                <td>19/09/2017</td>
-                <td>2,000 h</td>
-                <td>828 h</td>
-                <td>1,172 h</td>
-                <td>19/09/2027</td>
-                <td><span class="status ok">OK</span></td>
-              </tr>
-            </tbody>
+            <tbody id="component-table-body"></tbody>
           </table>
         </div>
       </section>
 
-      <section class="stats-row">
+      <section class="stats-row view" id="stats-view">
         <article class="mini">
           <p>Overhaul Requerido</p>
-          <b style="color: var(--danger)">3</b>
+          <b style="color: var(--danger)" id="stat-overhaul">0</b>
         </article>
         <article class="mini">
           <p>Proximos 90 dias</p>
-          <b style="color: var(--warn)">2</b>
+          <b style="color: var(--warn)" id="stat-90">0</b>
         </article>
         <article class="mini">
           <p>Proximos 180 dias</p>
-          <b style="color: #ffd58f">3</b>
+          <b style="color: #ffd58f" id="stat-180">0</b>
         </article>
         <article class="mini">
           <p>Total Horas Consumidas</p>
-          <b style="color: var(--accent-2)">4,039 h</b>
+          <b style="color: var(--accent-2)" id="stat-consumed">0 h</b>
         </article>
         <article class="mini">
           <p>Total Horas Remanentes</p>
-          <b style="color: #65f39a">3,560 h</b>
+          <b style="color: #65f39a" id="stat-remaining">0 h</b>
         </article>
       </section>
 
@@ -955,5 +1071,575 @@
       </footer>
     </main>
   </div>
+  <script>
+    const DB_STORAGE_KEY = "sr_aero_fleet_v1";
+    const TODAY = new Date("2026-07-01T00:00:00");
+    const defaultRowsPnp501 = [
+      {
+        component: "Mi-17 MTV-1",
+        series: "96019",
+        workshop: "Helicentro",
+        overhaul: "20/03/2020",
+        assigned: "2,000 h",
+        consumed: "860 h",
+        remaining: "1,140 h",
+        due: "20/03/2028"
+      },
+      {
+        component: "Motor 1 TV3-117BM",
+        series: "7087882200433",
+        workshop: "URAL",
+        overhaul: "12/04/2016",
+        assigned: "1,500 h",
+        consumed: "828.5 h",
+        remaining: "671.5 h",
+        due: "12/04/2026"
+      },
+      {
+        component: "Motor 2 TV3-117BM",
+        series: "7087884000357",
+        workshop: "BORYSFEN",
+        overhaul: "21/04/2016",
+        assigned: "1,500 h",
+        consumed: "828.5 h",
+        remaining: "671.5 h",
+        due: "21/04/2026"
+      },
+      {
+        component: "AI-9B",
+        series: "7080924200355",
+        workshop: "OOO ARP Motor",
+        overhaul: "16/07/2020",
+        assigned: "600 arr",
+        consumed: "694 arr",
+        remaining: "-94 arr",
+        due: "16/07/2028"
+      },
+      {
+        component: "VR-14",
+        series: "L0701003MP2",
+        workshop: "AO REDUCTOR PM",
+        overhaul: "19/09/2017",
+        assigned: "2,000 h",
+        consumed: "828 h",
+        remaining: "1,172 h",
+        due: "19/09/2027"
+      }
+    ];
+
+    function createDefaultFleet() {
+      return {
+        selectedId: "pnp-501",
+        aircrafts: [
+          {
+            id: "pnp-501",
+            code: "PNP-501",
+            name: "Mi-17 MTV-1",
+            rows: structuredClone(defaultRowsPnp501)
+          },
+          {
+            id: "pnp-506",
+            code: "PNP-506",
+            name: "Mi-171",
+            rows: []
+          }
+        ]
+      };
+    }
+
+    function loadFleet() {
+      const saved = localStorage.getItem(DB_STORAGE_KEY);
+      if (!saved) {
+        return createDefaultFleet();
+      }
+      try {
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed.aircrafts) || parsed.aircrafts.length === 0) {
+          return createDefaultFleet();
+        }
+        if (!parsed.selectedId || !parsed.aircrafts.find((aircraft) => aircraft.id === parsed.selectedId)) {
+          parsed.selectedId = parsed.aircrafts[0].id;
+        }
+        return parsed;
+      } catch {
+        return createDefaultFleet();
+      }
+    }
+
+    let fleet = loadFleet();
+
+    function saveFleet() {
+      localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(fleet));
+    }
+
+    function getCurrentAircraft() {
+      return fleet.aircrafts.find((aircraft) => aircraft.id === fleet.selectedId) || null;
+    }
+
+    function getCurrentRows() {
+      const currentAircraft = getCurrentAircraft();
+      return currentAircraft ? currentAircraft.rows : [];
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"]/g, (char) => {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\"": "&quot;"
+        }[char];
+      });
+    }
+
+    function parseNumeric(value) {
+      const numeric = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+      return Number.isFinite(numeric) ? numeric : 0;
+    }
+
+    function parseEsDate(value) {
+      const match = String(value).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!match) {
+        return null;
+      }
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3]);
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+        return null;
+      }
+      return date;
+    }
+
+    function getStatus(row) {
+      const remaining = parseNumeric(row.remaining);
+      const dueDate = parseEsDate(row.due);
+      if (remaining < 0) {
+        return "CRITICO";
+      }
+      if (dueDate && dueDate < TODAY) {
+        return "CRITICO";
+      }
+      const assigned = parseNumeric(row.assigned);
+      const daysToDue = dueDate ? Math.floor((dueDate - TODAY) / 86400000) : null;
+      if ((daysToDue !== null && daysToDue <= 180) || (assigned > 0 && remaining <= assigned * 0.15)) {
+        return "ALERTA";
+      }
+      return "OK";
+    }
+
+    function formatMetric(value) {
+      return new Intl.NumberFormat("es-PE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1
+      }).format(value);
+    }
+
+    function calculateMetrics() {
+      const rows = getCurrentRows();
+      const total = rows.length;
+      const critical = rows.filter((row) => getStatus(row) === "CRITICO").length;
+      const alert = rows.filter((row) => getStatus(row) === "ALERTA").length;
+      const ok = rows.filter((row) => getStatus(row) === "OK").length;
+
+      const dueIn90 = rows.filter((row) => {
+        const dueDate = parseEsDate(row.due);
+        if (!dueDate) {
+          return false;
+        }
+        const days = Math.floor((dueDate - TODAY) / 86400000);
+        return days >= 0 && days <= 90;
+      }).length;
+
+      const dueIn180 = rows.filter((row) => {
+        const dueDate = parseEsDate(row.due);
+        if (!dueDate) {
+          return false;
+        }
+        const days = Math.floor((dueDate - TODAY) / 86400000);
+        return days >= 0 && days <= 180;
+      }).length;
+
+      const consumedTotal = rows.reduce((sum, row) => sum + parseNumeric(row.consumed), 0);
+      const remainingTotal = rows.reduce((sum, row) => sum + parseNumeric(row.remaining), 0);
+      const risk = Math.round(((critical + alert * 0.5) / Math.max(total, 1)) * 100);
+
+      return {
+        total,
+        critical,
+        alert,
+        ok,
+        dueIn90,
+        dueIn180,
+        consumedTotal,
+        remainingTotal,
+        risk
+      };
+    }
+
+    function renderKpis() {
+      const metrics = calculateMetrics();
+      const total = Math.max(metrics.total, 1);
+
+      const totalEl = document.getElementById("kpi-total");
+      const totalPctEl = document.getElementById("kpi-total-pct");
+      const criticalEl = document.getElementById("kpi-critical");
+      const criticalPctEl = document.getElementById("kpi-critical-pct");
+      const alertEl = document.getElementById("kpi-alert");
+      const alertPctEl = document.getElementById("kpi-alert-pct");
+      const okEl = document.getElementById("kpi-ok");
+      const okPctEl = document.getElementById("kpi-ok-pct");
+      const riskEl = document.getElementById("kpi-risk-value");
+      const riskRingEl = document.getElementById("kpi-risk-ring");
+      const riskLabelEl = document.getElementById("kpi-risk-label");
+
+      if (totalEl) totalEl.textContent = String(metrics.total);
+      if (totalPctEl) totalPctEl.textContent = "100%";
+      if (criticalEl) criticalEl.textContent = String(metrics.critical);
+      if (criticalPctEl) criticalPctEl.textContent = `${Math.round((metrics.critical / total) * 100)}%`;
+      if (alertEl) alertEl.textContent = String(metrics.alert);
+      if (alertPctEl) alertPctEl.textContent = `${Math.round((metrics.alert / total) * 100)}%`;
+      if (okEl) okEl.textContent = String(metrics.ok);
+      if (okPctEl) okPctEl.textContent = `${Math.round((metrics.ok / total) * 100)}%`;
+
+      if (riskEl) riskEl.textContent = `${metrics.risk}%`;
+      if (riskRingEl) {
+        const degrees = Math.round((metrics.risk / 100) * 360);
+        riskRingEl.style.background = `conic-gradient(var(--danger) 0 ${degrees}deg, #24456f ${degrees}deg 360deg)`;
+      }
+
+      if (riskLabelEl) {
+        let label = "Bajo";
+        let color = "var(--ok)";
+        if (metrics.risk >= 70) {
+          label = "Alto";
+          color = "var(--danger)";
+        } else if (metrics.risk >= 40) {
+          label = "Medio";
+          color = "var(--warn)";
+        }
+        riskLabelEl.textContent = label;
+        riskLabelEl.style.color = color;
+      }
+
+      const overhaulEl = document.getElementById("stat-overhaul");
+      const due90El = document.getElementById("stat-90");
+      const due180El = document.getElementById("stat-180");
+      const consumedEl = document.getElementById("stat-consumed");
+      const remainingEl = document.getElementById("stat-remaining");
+
+      if (overhaulEl) overhaulEl.textContent = String(metrics.critical);
+      if (due90El) due90El.textContent = String(metrics.dueIn90);
+      if (due180El) due180El.textContent = String(metrics.dueIn180);
+      if (consumedEl) consumedEl.textContent = `${formatMetric(metrics.consumedTotal)} h`;
+      if (remainingEl) remainingEl.textContent = `${formatMetric(metrics.remainingTotal)} h`;
+    }
+
+    function renderAircraftIdentity() {
+      const currentAircraft = getCurrentAircraft();
+      if (!currentAircraft) {
+        return;
+      }
+      const brandCodeEl = document.getElementById("brand-code");
+      const titleSubEl = document.getElementById("title-sub");
+      const chipAircraftEl = document.getElementById("chip-aircraft");
+      if (brandCodeEl) brandCodeEl.textContent = currentAircraft.code;
+      if (titleSubEl) titleSubEl.textContent = `Dashboard tecnico · ${currentAircraft.code}`;
+      if (chipAircraftEl) chipAircraftEl.textContent = `${currentAircraft.code} (${currentAircraft.name})`;
+    }
+
+    function renderAircraftList() {
+      const listEl = document.getElementById("aircraft-list");
+      const emptyEl = document.getElementById("aircraft-empty-note");
+      if (!listEl || !emptyEl) {
+        return;
+      }
+
+      if (fleet.aircrafts.length === 0) {
+        listEl.innerHTML = "";
+        emptyEl.style.display = "block";
+        return;
+      }
+
+      emptyEl.style.display = "none";
+      listEl.innerHTML = fleet.aircrafts.map((aircraft) => {
+        const status = aircraft.id === fleet.selectedId ? "active" : "";
+        return `
+          <article class="aircraft-card ${status}">
+            <h3>${escapeHtml(aircraft.code)}</h3>
+            <p>${escapeHtml(aircraft.name)}</p>
+            <p>Componentes: ${aircraft.rows.length}</p>
+            <button class="table-btn" type="button" data-open-aircraft="${aircraft.id}">Abrir</button>
+            <button class="table-btn danger" type="button" data-delete-aircraft="${aircraft.id}">Eliminar</button>
+          </article>
+        `;
+      }).join("");
+
+      listEl.querySelectorAll("button[data-open-aircraft]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const aircraftId = button.getAttribute("data-open-aircraft");
+          if (!aircraftId) {
+            return;
+          }
+          fleet.selectedId = aircraftId;
+          saveFleet();
+          renderAircraftIdentity();
+          renderTable();
+          renderAircraftList();
+          setActiveMenuByTarget("base-datos");
+          showView("base-datos");
+        });
+      });
+
+      listEl.querySelectorAll("button[data-delete-aircraft]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const aircraftId = button.getAttribute("data-delete-aircraft");
+          if (!aircraftId) {
+            return;
+          }
+          deleteAircraftById(aircraftId);
+        });
+      });
+    }
+
+    function deleteAircraftById(aircraftId) {
+      if (fleet.aircrafts.length <= 1) {
+        window.alert("Debe existir al menos una aeronave registrada.");
+        return;
+      }
+
+      const aircraft = fleet.aircrafts.find((item) => item.id === aircraftId);
+      if (!aircraft) {
+        return;
+      }
+
+      const accepted = window.confirm(`Deseas eliminar ${aircraft.code} (${aircraft.name}) y su base de datos completa?`);
+      if (!accepted) {
+        return;
+      }
+
+      fleet.aircrafts = fleet.aircrafts.filter((item) => item.id !== aircraftId);
+
+      if (!fleet.aircrafts.find((item) => item.id === fleet.selectedId)) {
+        fleet.selectedId = fleet.aircrafts[0].id;
+      }
+
+      saveFleet();
+      renderAircraftIdentity();
+      renderAircraftList();
+      renderTable();
+    }
+
+    function showView(targetId) {
+      const dashboardBlocks = [
+        document.getElementById("dashboard"),
+        document.getElementById("main-grid-view"),
+        document.getElementById("base-datos"),
+        document.getElementById("stats-view")
+      ];
+      const aircraftView = document.getElementById("aeronaves");
+
+      if (targetId === "aeronaves") {
+        dashboardBlocks.forEach((block) => {
+          if (block) block.classList.add("hidden");
+        });
+        if (aircraftView) aircraftView.classList.remove("hidden");
+        return;
+      }
+
+      if (aircraftView) aircraftView.classList.add("hidden");
+      dashboardBlocks.forEach((block) => {
+        if (!block) return;
+        block.classList.remove("hidden");
+      });
+
+      if (targetId === "base-datos") {
+        const baseSection = document.getElementById("base-datos");
+        if (baseSection) {
+          baseSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          baseSection.classList.add("jump-highlight");
+          window.setTimeout(() => baseSection.classList.remove("jump-highlight"), 1200);
+        }
+      }
+    }
+
+    function setActiveMenuByTarget(targetId) {
+      const menuItems = document.querySelectorAll(".menu-item[data-target]");
+      menuItems.forEach((item) => {
+        item.classList.toggle("active", item.getAttribute("data-target") === targetId);
+      });
+    }
+
+    function renderTable() {
+      const rows = getCurrentRows();
+      const tbody = document.getElementById("component-table-body");
+      if (!tbody) {
+        return;
+      }
+      tbody.innerHTML = rows.map((row, index) => {
+        const status = getStatus(row);
+        const statusClass = status === "CRITICO" ? "critical" : status === "ALERTA" ? "warn" : "ok";
+        return `
+          <tr>
+            <td><input class="cell-input" data-key="component" data-index="${index}" value="${escapeHtml(row.component)}"></td>
+            <td><input class="cell-input" data-key="series" data-index="${index}" value="${escapeHtml(row.series)}"></td>
+            <td><input class="cell-input" data-key="workshop" data-index="${index}" value="${escapeHtml(row.workshop)}"></td>
+            <td><input class="cell-input" data-key="overhaul" data-index="${index}" value="${escapeHtml(row.overhaul)}"></td>
+            <td><input class="cell-input" data-key="assigned" data-index="${index}" value="${escapeHtml(row.assigned)}"></td>
+            <td><input class="cell-input" data-key="consumed" data-index="${index}" value="${escapeHtml(row.consumed)}"></td>
+            <td><input class="cell-input" data-key="remaining" data-index="${index}" value="${escapeHtml(row.remaining)}"></td>
+            <td><input class="cell-input" data-key="due" data-index="${index}" value="${escapeHtml(row.due)}"></td>
+            <td><span class="status ${statusClass}">${status}</span></td>
+          </tr>
+        `;
+      }).join("");
+      renderKpis();
+    }
+
+    function bindTableEditing() {
+      const tbody = document.getElementById("component-table-body");
+      if (!tbody) {
+        return;
+      }
+      tbody.addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        const rowIndex = Number(target.dataset.index);
+        const key = target.dataset.key;
+        const currentAircraft = getCurrentAircraft();
+        if (!currentAircraft || Number.isNaN(rowIndex) || !key || !currentAircraft.rows[rowIndex]) {
+          return;
+        }
+        currentAircraft.rows[rowIndex][key] = target.value;
+        saveFleet();
+        renderTable();
+        renderAircraftList();
+      });
+    }
+
+    function bindTableButtons() {
+      const addRowButton = document.getElementById("add-row-btn");
+      const resetButton = document.getElementById("reset-db-btn");
+      if (addRowButton) {
+        addRowButton.addEventListener("click", () => {
+          const currentAircraft = getCurrentAircraft();
+          if (!currentAircraft) {
+            return;
+          }
+          currentAircraft.rows.push({
+            component: "Nuevo componente",
+            series: "",
+            workshop: "",
+            overhaul: "01/07/2026",
+            assigned: "0 h",
+            consumed: "0 h",
+            remaining: "0 h",
+            due: "01/07/2027"
+          });
+          saveFleet();
+          renderTable();
+          renderAircraftList();
+        });
+      }
+      if (resetButton) {
+        resetButton.addEventListener("click", () => {
+          const accepted = window.confirm("Deseas restaurar la base de datos original?");
+          if (!accepted) {
+            return;
+          }
+          const currentAircraft = getCurrentAircraft();
+          if (!currentAircraft) {
+            return;
+          }
+          currentAircraft.rows = currentAircraft.id === "pnp-501" ? structuredClone(defaultRowsPnp501) : [];
+          saveFleet();
+          renderTable();
+          renderAircraftList();
+        });
+      }
+    }
+
+    function bindAircraftCreation() {
+      const form = document.getElementById("aircraft-form");
+      const codeInput = document.getElementById("new-aircraft-code");
+      const nameInput = document.getElementById("new-aircraft-name");
+      if (!form || !(codeInput instanceof HTMLInputElement) || !(nameInput instanceof HTMLInputElement)) {
+        return;
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const code = codeInput.value.trim().toUpperCase();
+        const name = nameInput.value.trim();
+
+        if (!code || !name) {
+          window.alert("Ingresa codigo y nombre para crear la aeronave.");
+          return;
+        }
+
+        const exists = fleet.aircrafts.some((aircraft) => aircraft.code.toUpperCase() === code);
+        if (exists) {
+          window.alert("Ese codigo ya existe.");
+          return;
+        }
+
+        const id = `${code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
+        fleet.aircrafts.push({
+          id,
+          code,
+          name,
+          rows: []
+        });
+        fleet.selectedId = id;
+        saveFleet();
+        form.reset();
+        renderAircraftIdentity();
+        renderAircraftList();
+        renderTable();
+        setActiveMenuByTarget("base-datos");
+        showView("base-datos");
+      });
+    }
+
+    function bindMenuNavigation() {
+      const menuItems = document.querySelectorAll(".menu-item[data-target]");
+      menuItems.forEach((item) => {
+        item.addEventListener("click", (event) => {
+          event.preventDefault();
+          menuItems.forEach((currentItem) => currentItem.classList.remove("active"));
+          item.classList.add("active");
+
+          const targetId = item.getAttribute("data-target");
+          if (!targetId) {
+            return;
+          }
+          const target = document.getElementById(targetId);
+          if (!target) {
+            return;
+          }
+
+          showView(targetId);
+
+          if (targetId === "dashboard") {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+            target.classList.add("jump-highlight");
+            window.setTimeout(() => target.classList.remove("jump-highlight"), 1200);
+          }
+        });
+      });
+    }
+
+    bindAircraftCreation();
+    bindMenuNavigation();
+    bindTableEditing();
+    bindTableButtons();
+    renderAircraftIdentity();
+    renderAircraftList();
+    renderTable();
+  </script>
 </body>
 </html>
