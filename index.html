@@ -1,265 +1,959 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Dashboard PNP-501111 Editable - Fechas Automáticas</title>
-<style>
-:root{--bg:#08111f;--panel:#111d32;--panel2:#16243d;--line:#2b3d5f;--text:#f8fafc;--muted:#b6c4d8;--blue:#38bdf8;--red:#ef4444;--orange:#f59e0b;--green:#22c55e;--yellow:#eab308}
-*{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:radial-gradient(circle at top left,#1e3762,#08111f 42%,#050914);color:var(--text)}
-.wrap{max-width:1500px;margin:auto;padding:28px} header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.kicker{color:var(--blue);font-weight:900;letter-spacing:.12em;text-transform:uppercase;font-size:12px}h1{margin:8px 0 6px;font-size:38px;line-height:1.05}.sub{color:var(--muted);font-size:16px;max-width:850px}.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;color:#06111f;cursor:pointer;background:#e2e8f0}button.primary{background:var(--blue)}button.good{background:#86efac}button.warn{background:#fde68a}.grid{display:grid;gap:16px}.kpis{grid-template-columns:repeat(5,1fr);margin:20px 0}.kpi{background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:20px;padding:18px;min-height:126px}.kpi span{color:var(--muted);font-size:13px}.kpi b{display:block;font-size:34px;margin-top:10px}.kpi.red b{color:var(--red)}.kpi.orange b{color:var(--orange)}.kpi.green b{color:var(--green)}.panel{background:rgba(17,29,50,.94);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin-top:16px}.section{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}h2{margin:0;font-size:24px}.pill{padding:7px 11px;border-radius:99px;background:#213455;color:#dbeafe;font-size:12px;font-weight:900}.cards{grid-template-columns:repeat(5,1fr)}.card{border:1px solid var(--line);border-radius:18px;padding:16px;background:#0e1930;min-height:245px}.badge{display:inline-block;border-radius:99px;padding:6px 9px;font-size:11px;font-weight:900;background:#263a5d}.redbg .badge{color:#fecaca;background:rgba(239,68,68,.2)}.orangebg .badge{color:#fed7aa;background:rgba(245,158,11,.2)}.greenbg .badge{color:#bbf7d0;background:rgba(34,197,94,.2)}.yellowbg .badge{color:#fef08a;background:rgba(234,179,8,.2)}.card h3{margin:12px 0 8px;font-size:18px}.card p{margin:6px 0;color:var(--muted);font-size:13px;line-height:1.35}.bar{height:15px;border-radius:99px;overflow:hidden;background:#071024;border:1px solid #25385b;margin:10px 0}.fill{height:100%;border-radius:99px}.fill.red{background:linear-gradient(90deg,#fb7185,#ef4444)}.fill.green{background:linear-gradient(90deg,#86efac,#22c55e)}.fill.orange{background:linear-gradient(90deg,#fbbf24,#f59e0b)}.two{grid-template-columns:1.15fr .85fr}.table-wrap{overflow:auto;border-radius:16px;border:1px solid var(--line)}table{border-collapse:collapse;width:100%;min-width:1700px;background:#0c1629}th,td{border-bottom:1px solid var(--line);border-right:1px solid #1c2d4b;padding:9px 8px;font-size:12px}th{background:#10213d;color:#bfdbfe;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;z-index:1}td input,td select{width:100%;background:#071024;color:var(--text);border:1px solid #294064;border-radius:8px;padding:7px;font-size:12px}td input.dateedit{min-width:115px;background:#0b1b35;border-color:#38bdf8}td input.calc{min-width:115px;background:#111827;color:#cbd5e1;border-color:#475569}td input[type=number]{text-align:right}.small{color:var(--muted);font-size:12px}.status-ok{color:#86efac;font-weight:900}.status-crit{color:#fecaca;font-weight:900}.status-warn{color:#fde68a;font-weight:900}.delete{background:#fecaca;color:#7f1d1d;padding:7px 10px}.donut{width:190px;height:190px;border-radius:50%;background:conic-gradient(var(--red) 0 var(--riskDeg),var(--green) var(--riskDeg) 360deg);position:relative;margin:auto}.donut:after{content:"";position:absolute;inset:26px;border-radius:50%;background:#111d32}.donut div{position:absolute;inset:0;display:grid;place-items:center;z-index:1;text-align:center;font-weight:900}.timeline{display:grid;gap:10px}.tl{display:grid;grid-template-columns:120px 1fr 90px;gap:10px;align-items:center;background:#0c1629;border:1px solid var(--line);border-radius:14px;padding:10px}.tl .date{font-weight:900;color:#bfdbfe}.tl .days{text-align:right;font-weight:900}.note{margin-top:10px;color:#94a3b8;font-size:12px;line-height:1.45}.hidden{display:none}@media(max-width:1100px){.kpis,.cards,.two{grid-template-columns:1fr 1fr}.actions{justify-content:flex-start}header{display:block}}@media(max-width:700px){.kpis,.cards,.two{grid-template-columns:1fr}h1{font-size:30px}}
-</style>
-<style>
-.top-nav{display:flex;align-items:center;gap:10px;justify-content:flex-end;position:relative}
-.menu-toggle{display:inline-flex;align-items:center;justify-content:center;background:#0b172b;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1;min-width:44px;min-height:44px}
-.hamburger{display:flex;flex-direction:column;gap:4px}
-.hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px}
-.menu-panel{display:none;position:absolute;right:0;top:52px;min-width:270px;padding:10px;background:#0e1a30;border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 40px rgba(0,0,0,.35);z-index:30;flex-direction:column;gap:8px}
-.menu-panel.open{display:flex}
-.menu-panel button{width:100%;text-align:left}
-.menu-panel .aircraft{background:var(--yellow)}
-@media (max-width:960px){
-  header{align-items:stretch}
-  .top-nav{align-self:flex-end}
-}
-</style>
-<style>
-/* Ajustes responsive adicionales para celular */
-.card-actions{display:flex;justify-content:flex-end;margin-top:10px}
-.card-delete{background:#ef4444;color:#fff;border:0;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}
-.table-wrap{width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
-#dbTable{min-width:1100px}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SR AERO | Dashboard PNP-501</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #040b1a;
+      --bg-2: #061530;
+      --panel: #0b1e3e;
+      --panel-soft: #0d244b;
+      --line: rgba(125, 169, 237, 0.18);
+      --line-strong: rgba(125, 169, 237, 0.35);
+      --text: #e7f1ff;
+      --muted: #99b4d7;
+      --ok: #2bc676;
+      --warn: #ffb100;
+      --danger: #ff4f4f;
+      --accent: #3f8cff;
+      --accent-2: #0fd4ff;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --shadow: 0 20px 40px rgba(1, 7, 20, 0.6);
+    }
 
-@media (max-width:960px){
-  .wrap{padding:14px}
-  header{flex-direction:column;gap:12px;margin-bottom:14px}
-  h1{font-size:28px;line-height:1.15}
-  .sub{font-size:14px;max-width:none}
+    * {
+      box-sizing: border-box;
+    }
 
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .two{grid-template-columns:1fr}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Barlow, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1200px 700px at 12% 0%, #133b7a 0%, rgba(19, 59, 122, 0) 65%),
+        radial-gradient(900px 700px at 95% 85%, #0f2d62 0%, rgba(15, 45, 98, 0) 75%),
+        linear-gradient(150deg, var(--bg-2) 0%, var(--bg-1) 55%, #020611 100%);
+      letter-spacing: 0.01em;
+    }
 
-  .panel{padding:14px;border-radius:16px;margin-top:12px}
-  .card{min-height:unset;padding:12px}
-  .section{align-items:flex-start;flex-wrap:wrap}
-  h2{font-size:20px}
+    .layout {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 100vh;
+    }
 
-  .donut{max-width:280px;margin:0 auto}
-  .timeline{overflow:auto}
-}
+    .sidebar {
+      padding: 22px 14px;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(8, 21, 45, 0.95), rgba(5, 14, 31, 0.98));
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
 
-@media (max-width:640px){
-  .kicker{font-size:11px;letter-spacing:.08em}
-  h1{font-size:24px}
+    .brand {
+      padding: 8px 12px 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 4px;
+    }
 
-  .kpis{grid-template-columns:1fr}
-  .cards{grid-template-columns:1fr}
+    .brand-title {
+      margin: 0;
+      font-family: Rajdhani, sans-serif;
+      font-size: 30px;
+      line-height: 0.95;
+      letter-spacing: 0.05em;
+      color: #bcd7ff;
+    }
 
-  .top-nav{width:100%;justify-content:flex-end}
-  .menu-panel{left:0;right:0;min-width:unset;top:50px}
-  .menu-panel button{font-size:14px}
+    .brand-sub {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
 
-  button{padding:10px 12px}
-}
-</style>
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .menu-item {
+      padding: 11px 12px;
+      border-radius: 10px;
+      color: #bfd5f4;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: 0.25s ease;
+      font-size: 15px;
+    }
+
+    .menu-item:hover {
+      border-color: var(--line-strong);
+      background: rgba(63, 140, 255, 0.08);
+      transform: translateX(2px);
+    }
+
+    .menu-item.active {
+      border-color: rgba(77, 142, 255, 0.7);
+      background: linear-gradient(90deg, #1a5fd0 0%, #1149b6 100%);
+      color: #f4f9ff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .profile {
+      margin-top: auto;
+      border-top: 1px solid var(--line);
+      padding: 12px 10px 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .profile b {
+      display: block;
+      color: #d9e8ff;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .content {
+      padding: 20px 18px 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 8px 4px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1;
+      font-family: Rajdhani, sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    .title-wrap p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(8, 23, 49, 0.75);
+      color: #dbe9ff;
+      font-size: 13px;
+      min-width: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .grid-kpi {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(150deg, rgba(18, 44, 88, 0.86), rgba(9, 24, 52, 0.92));
+      box-shadow: var(--shadow);
+      padding: 14px 14px 13px;
+      min-height: 105px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      animation: card-enter 0.5s ease both;
+    }
+
+    .kpi:nth-child(2) { animation-delay: 0.06s; }
+    .kpi:nth-child(3) { animation-delay: 0.12s; }
+    .kpi:nth-child(4) { animation-delay: 0.18s; }
+    .kpi:nth-child(5) { animation-delay: 0.24s; }
+
+    .kpi-title {
+      margin: 0;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      margin: 2px 0 0;
+      font-size: 44px;
+      font-family: Rajdhani, sans-serif;
+      line-height: 0.8;
+      font-weight: 700;
+      text-shadow: 0 0 26px rgba(45, 128, 255, 0.24);
+    }
+
+    .kpi-meta {
+      margin: 0;
+      font-size: 13px;
+      color: #c8dbfb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi-meta strong {
+      font-weight: 700;
+    }
+
+    .kpi-risk {
+      display: grid;
+      place-items: center;
+      grid-template-columns: 74px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ring {
+      width: 72px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: conic-gradient(var(--danger) 0 216deg, #24456f 216deg 360deg);
+      position: relative;
+      box-shadow: 0 0 30px rgba(255, 64, 64, 0.22);
+    }
+
+    .ring::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: inherit;
+      background: #0c2247;
+      border: 1px solid var(--line);
+    }
+
+    .ring span {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: Rajdhani, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      z-index: 1;
+    }
+
+    .main-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1.05fr 1.2fr 0.9fr;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(170deg, rgba(12, 32, 66, 0.9), rgba(8, 21, 45, 0.95));
+      box-shadow: var(--shadow);
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      top: -90px;
+      right: -70px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(40, 124, 247, 0.18), rgba(40, 124, 247, 0));
+      pointer-events: none;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 17px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-family: Rajdhani, sans-serif;
+    }
+
+    .panel-sub {
+      color: var(--muted);
+      margin: 2px 0 12px;
+      font-size: 12px;
+    }
+
+    .plane-title {
+      font-family: Rajdhani, sans-serif;
+      font-size: 34px;
+      line-height: 0.8;
+      margin: 8px 0;
+    }
+
+    .meta-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+      color: #d6e6ff;
+      font-size: 14px;
+    }
+
+    .meta-list span {
+      color: var(--muted);
+      margin-right: 6px;
+    }
+
+    .state-pill {
+      margin-top: 10px;
+      display: inline-block;
+      background: rgba(43, 198, 118, 0.18);
+      border: 1px solid rgba(43, 198, 118, 0.6);
+      color: #b2ffd4;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 9px;
+      letter-spacing: 0.04em;
+    }
+
+    .progress-title {
+      margin: 12px 0 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .progress {
+      height: 11px;
+      background: #1a365f;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 169, 237, 0.2);
+      overflow: hidden;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 18.5%;
+      background: linear-gradient(90deg, #2bc676, #6fe59f);
+      border-radius: inherit;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(40px, 1fr));
+      gap: 10px;
+      align-items: end;
+      min-height: 170px;
+      padding-top: 4px;
+    }
+
+    .bar-stack {
+      display: grid;
+      gap: 5px;
+      justify-items: center;
+    }
+
+    .bar {
+      width: 25px;
+      border-radius: 8px 8px 3px 3px;
+      border: 1px solid rgba(129, 173, 242, 0.3);
+      background: linear-gradient(180deg, rgba(67, 139, 255, 0.88), rgba(20, 72, 163, 0.95));
+    }
+
+    .bar.rem {
+      background: linear-gradient(180deg, rgba(66, 208, 114, 0.9), rgba(18, 126, 67, 0.95));
+    }
+
+    .bar-label {
+      color: #c3d8f8;
+      font-size: 11px;
+      text-align: center;
+      line-height: 1.05;
+    }
+
+    .bar-value {
+      color: #94b7e3;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .events {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .events li {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 8px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(125, 169, 237, 0.15);
+      background: rgba(7, 21, 45, 0.7);
+      font-size: 13px;
+    }
+
+    .events .date {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+      align-self: center;
+      white-space: nowrap;
+    }
+
+    .date.danger {
+      background: rgba(255, 79, 79, 0.2);
+      color: #ffc0c0;
+      border: 1px solid rgba(255, 79, 79, 0.7);
+    }
+
+    .date.warn {
+      background: rgba(255, 177, 0, 0.22);
+      color: #ffe2a2;
+      border: 1px solid rgba(255, 177, 0, 0.7);
+    }
+
+    .date.ok {
+      background: rgba(43, 198, 118, 0.2);
+      color: #b7ffd7;
+      border: 1px solid rgba(43, 198, 118, 0.65);
+    }
+
+    .table-panel {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .table-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 930px;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(125, 169, 237, 0.13);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: #9fbfe7;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 11px;
+      background: rgba(5, 18, 40, 0.85);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:hover {
+      background: rgba(34, 80, 153, 0.2);
+    }
+
+    .status {
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border: 1px solid;
+      text-align: center;
+      width: fit-content;
+    }
+
+    .status.ok {
+      color: #b7ffd7;
+      border-color: rgba(43, 198, 118, 0.7);
+      background: rgba(43, 198, 118, 0.2);
+    }
+
+    .status.critical {
+      color: #ffc8c8;
+      border-color: rgba(255, 79, 79, 0.7);
+      background: rgba(255, 79, 79, 0.2);
+    }
+
+    .stats-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(160deg, rgba(12, 31, 62, 0.88), rgba(7, 19, 41, 0.92));
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .mini p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .mini b {
+      display: block;
+      margin-top: 4px;
+      font-size: 28px;
+      line-height: 0.9;
+      font-family: Rajdhani, sans-serif;
+    }
+
+    footer {
+      text-align: center;
+      color: #7fa1d1;
+      font-size: 12px;
+      padding-bottom: 6px;
+    }
+
+    @keyframes card-enter {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1220px) {
+      .layout {
+        grid-template-columns: 84px 1fr;
+      }
+
+      .brand-title,
+      .brand-sub,
+      .menu-item,
+      .profile {
+        display: none;
+      }
+
+      .sidebar {
+        align-items: center;
+        padding: 14px 9px;
+      }
+
+      .brand {
+        margin: 0;
+        padding: 8px;
+        border-bottom: 0;
+      }
+
+      .brand::before {
+        content: "SR";
+        font-family: Rajdhani, sans-serif;
+        font-size: 32px;
+        color: #d9e8ff;
+      }
+
+      .menu {
+        width: 100%;
+      }
+
+      .menu-item {
+        display: block;
+        text-align: center;
+        font-size: 0;
+        min-height: 42px;
+      }
+
+      .menu-item::before {
+        font-size: 20px;
+      }
+
+      .menu-item:nth-child(1)::before { content: "⌂"; }
+      .menu-item:nth-child(2)::before { content: "✈"; }
+      .menu-item:nth-child(3)::before { content: "⚙"; }
+      .menu-item:nth-child(4)::before { content: "▦"; }
+      .menu-item:nth-child(5)::before { content: "⚠"; }
+      .menu-item:nth-child(6)::before { content: "◷"; }
+      .menu-item:nth-child(7)::before { content: "☰"; }
+    }
+
+    @media (max-width: 1100px) {
+      .grid-kpi {
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-row {
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .brand,
+      .menu {
+        display: block;
+      }
+
+      .brand {
+        padding: 0;
+      }
+
+      .brand::before {
+        content: "SR AERO";
+        font-size: 24px;
+      }
+
+      .menu {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+
+      .menu-item {
+        min-height: 36px;
+        border-radius: 8px;
+      }
+
+      .content {
+        padding: 14px 10px;
+      }
+
+      .title-wrap h1 {
+        font-size: 26px;
+      }
+
+      .grid-kpi {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .chip {
+        min-width: 0;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <div><div class="kicker">Dashboard técnico aeronáutico · PNP-501</div><h1>Sistema de Gestión de Recursos Aeronáuticos</h1><p class="sub">Dashboard Técnico de Componentes y Control de Overhaul.</p></div>
-  <div class="top-nav">
-    <button id="menuToggle" class="menu-toggle" aria-expanded="false" aria-controls="mainMenu" aria-label="Abrir menú">
-      <span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span>
-    </button>
-    <div class="actions menu-panel" id="mainMenu">
-      <button class="primary" onclick="downloadExcel()">⬇ Descargar Excel</button>
-      <button class="aircraft" onclick="addAircraft()">+ Agregar aeronave</button>
-      <button class="good" onclick="addRow()">+ Agregar componente</button>
-      <button class="warn" onclick="resetData()">Restaurar datos</button>
-    </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <h2 class="brand-title">SR AERO</h2>
+        <p class="brand-sub">PNP-501</p>
+      </div>
+      <nav class="menu">
+        <a class="menu-item active" href="#">Dashboard</a>
+        <a class="menu-item" href="#">Aeronaves</a>
+        <a class="menu-item" href="#">Componentes</a>
+        <a class="menu-item" href="#">Base de datos</a>
+        <a class="menu-item" href="#">Alertas</a>
+        <a class="menu-item" href="#">Calendario</a>
+        <a class="menu-item" href="#">Historial</a>
+      </nav>
+      <div class="profile">
+        <b>Marlon Chuquino</b>
+        Administrador
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div class="title-wrap">
+          <h1>Sistema de Gestion de Recursos Aeronauticos</h1>
+          <p>Dashboard tecnico · PNP-501</p>
+        </div>
+        <div class="top-actions">
+          <div class="chip">Mi-17 MTV-1 (96019) <span>▼</span></div>
+          <div class="chip">01/07/2026 <span>◷</span></div>
+          <div class="chip">Notificaciones <span>●</span></div>
+        </div>
+      </header>
+
+      <section class="grid-kpi">
+        <article class="kpi">
+          <p class="kpi-title">Total Componentes</p>
+          <p class="kpi-value">5</p>
+          <p class="kpi-meta"><span>Registrados</span><strong>100%</strong></p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-title">Criticos / Overhaul</p>
+          <p class="kpi-value">3</p>
+          <p class="kpi-meta"><span>Requieren atencion</span><strong>60%</strong></p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-title">Alertas Preventivas</p>
+          <p class="kpi-value">0</p>
+          <p class="kpi-meta"><span>Sin alertas</span><strong>0%</strong></p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-title">En Condiciones</p>
+          <p class="kpi-value">2</p>
+          <p class="kpi-meta"><span>Operativos</span><strong>40%</strong></p>
+        </article>
+        <article class="kpi">
+          <p class="kpi-title">Riesgo Global</p>
+          <div class="kpi-risk">
+            <div class="ring"><span>60%</span></div>
+            <p class="kpi-meta"><strong style="color: var(--danger); font-size: 20px;">Alto</strong></p>
+          </div>
+        </article>
+      </section>
+
+      <section class="main-grid">
+        <article class="panel">
+          <h2>Aeronave Seleccionada</h2>
+          <p class="panel-sub">Serie 96019</p>
+          <p class="plane-title">Mi-17 MTV-1</p>
+          <ul class="meta-list">
+            <li><span>Horas Totales (TSN):</span> 3,324.7 h</li>
+            <li><span>Vida Total Asignada:</span> 18,000 h</li>
+            <li><span>Horas Remanentes:</span> 14,676 h</li>
+            <li><span>Vencimiento Calendario:</span> 20/03/2028</li>
+          </ul>
+          <div class="state-pill">OPERATIVO</div>
+          <p class="progress-title">Vida util consumida: 18.5%</p>
+          <div class="progress"><div></div></div>
+        </article>
+
+        <article class="panel">
+          <h2>Consumo de Recursos (TSO / Arranques)</h2>
+          <p class="panel-sub">Consumido vs remanente</p>
+          <div class="chart-grid">
+            <div class="bar-stack">
+              <div class="bar" style="height: 86px"></div>
+              <div class="bar rem" style="height: 114px"></div>
+              <div class="bar-value">860 / 1140</div>
+              <div class="bar-label">Mi-17</div>
+            </div>
+            <div class="bar-stack">
+              <div class="bar" style="height: 82px"></div>
+              <div class="bar rem" style="height: 68px"></div>
+              <div class="bar-value">828.5 / 671.5</div>
+              <div class="bar-label">Motor 1</div>
+            </div>
+            <div class="bar-stack">
+              <div class="bar" style="height: 82px"></div>
+              <div class="bar rem" style="height: 68px"></div>
+              <div class="bar-value">828.5 / 671.5</div>
+              <div class="bar-label">Motor 2</div>
+            </div>
+            <div class="bar-stack">
+              <div class="bar" style="height: 69px"></div>
+              <div class="bar rem" style="height: 16px; background: linear-gradient(180deg, #ff6a6a, #bf2626)"></div>
+              <div class="bar-value">694 / -94</div>
+              <div class="bar-label">AI-9B</div>
+            </div>
+            <div class="bar-stack">
+              <div class="bar" style="height: 80px"></div>
+              <div class="bar rem" style="height: 117px"></div>
+              <div class="bar-value">828 / 1172</div>
+              <div class="bar-label">VR-14</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Proximos Vencimientos</h2>
+          <p class="panel-sub">Control calendario</p>
+          <ul class="events">
+            <li>
+              <span>Motor 1 TV3-117BM</span>
+              <span class="date danger">12/04/2026</span>
+            </li>
+            <li>
+              <span>Motor 2 TV3-117BM</span>
+              <span class="date danger">21/04/2026</span>
+            </li>
+            <li>
+              <span>AI-9B</span>
+              <span class="date warn">16/07/2028</span>
+            </li>
+            <li>
+              <span>VR-14</span>
+              <span class="date ok">19/09/2027</span>
+            </li>
+            <li>
+              <span>Mi-17 MTV-1</span>
+              <span class="date ok">20/03/2028</span>
+            </li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="table-title">
+          <h2>Estado de Componentes</h2>
+          <span class="panel-sub">Monitoreo tecnico consolidado</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Componente</th>
+                <th>Serie</th>
+                <th>Taller</th>
+                <th>Ultimo Overhaul</th>
+                <th>Asignado</th>
+                <th>Consumido</th>
+                <th>Remanente</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mi-17 MTV-1</td>
+                <td>96019</td>
+                <td>Helicentro</td>
+                <td>20/03/2020</td>
+                <td>2,000 h</td>
+                <td>860 h</td>
+                <td>1,140 h</td>
+                <td>20/03/2028</td>
+                <td><span class="status ok">OK</span></td>
+              </tr>
+              <tr>
+                <td>Motor 1 TV3-117BM</td>
+                <td>7087882200433</td>
+                <td>URAL</td>
+                <td>12/04/2016</td>
+                <td>1,500 h</td>
+                <td>828.5 h</td>
+                <td>671.5 h</td>
+                <td>12/04/2026</td>
+                <td><span class="status critical">CRITICO</span></td>
+              </tr>
+              <tr>
+                <td>Motor 2 TV3-117BM</td>
+                <td>7087884000357</td>
+                <td>BORYSFEN</td>
+                <td>21/04/2016</td>
+                <td>1,500 h</td>
+                <td>828.5 h</td>
+                <td>671.5 h</td>
+                <td>21/04/2026</td>
+                <td><span class="status critical">CRITICO</span></td>
+              </tr>
+              <tr>
+                <td>AI-9B</td>
+                <td>7080924200355</td>
+                <td>OOO ARP Motor</td>
+                <td>16/07/2020</td>
+                <td>600 arr</td>
+                <td>694 arr</td>
+                <td>-94 arr</td>
+                <td>16/07/2028</td>
+                <td><span class="status critical">CRITICO</span></td>
+              </tr>
+              <tr>
+                <td>VR-14</td>
+                <td>L0701003MP2</td>
+                <td>AO REDUCTOR PM</td>
+                <td>19/09/2017</td>
+                <td>2,000 h</td>
+                <td>828 h</td>
+                <td>1,172 h</td>
+                <td>19/09/2027</td>
+                <td><span class="status ok">OK</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="stats-row">
+        <article class="mini">
+          <p>Overhaul Requerido</p>
+          <b style="color: var(--danger)">3</b>
+        </article>
+        <article class="mini">
+          <p>Proximos 90 dias</p>
+          <b style="color: var(--warn)">2</b>
+        </article>
+        <article class="mini">
+          <p>Proximos 180 dias</p>
+          <b style="color: #ffd58f">3</b>
+        </article>
+        <article class="mini">
+          <p>Total Horas Consumidas</p>
+          <b style="color: var(--accent-2)">4,039 h</b>
+        </article>
+        <article class="mini">
+          <p>Total Horas Remanentes</p>
+          <b style="color: #65f39a">3,560 h</b>
+        </article>
+      </section>
+
+      <footer>
+        2026 Sistema de Gestion de Recursos Aeronauticos · PNP-501 · Todos los derechos reservados
+      </footer>
+    </main>
   </div>
-</header>
-
-<section class="grid kpis" id="kpis"></section>
-
-<section class="panel"><div class="section"><h2>Semáforo de componentes</h2><span class="pill">Se actualiza desde Base_Datos</span></div><div class="grid cards" id="cards"></div></section>
-
-<section class="grid two">
-  <div class="panel"><div class="section"><h2>Consumo de recurso</h2><span class="pill">Horas / arranques TSO</span></div><div id="bars"></div></div>
-  <div class="panel"><div class="section"><h2>Riesgo global</h2><span class="pill">Overhaul + vencimientos</span></div><div class="donut" id="donut"><div id="donutText"></div></div><p class="note" id="riskNote"></p></div>
-</section>
-
-<section class="panel"><div class="section"><h2>Próximos vencimientos calendario</h2><span class="pill">Ordenado por fecha</span></div><div class="timeline" id="timeline"></div></section>
-
-<section class="panel"><div class="section"><h2>Base_Datos editable</h2><span class="pill">Todos los campos repetidos del Excel original</span></div><div class="table-wrap"><table id="dbTable"></table></div><p class="note">Campos incluidos: nombre del componente, número de serie, taller reparador, fecha último overhaul, recurso hasta próximo overhaul, horas/arranques acumulados TSO, recurso remanente, tiempo calendario, vencimiento calendario, vida total asignada, horas totales TSN, horas remanentes TSN, requiere overhaul y motivo. La fecha se edita como dd/mm/aaaa; el vencimiento calendario se recalcula automáticamente usando fecha último overhaul + tiempo de servicio calendario.</p></section>
-</div>
-<script>
-const TODAY = new Date('2026-07-01T00:00:00');
-const fields = [
-  ['tipo','Tipo'],['componente','Nombre del componente'],['serie','Número de serie'],['taller','Taller reparador'],['fechaOverhaul','Fecha último overhaul'],['recursoProximo','Recurso hasta próximo overhaul'],['consumidoTSO','Horas/Arranques acumulados TSO'],['remanente','Recurso remanente'],['unidad','Unidad'],['tiempoCalendario','Tiempo de servicio calendario'],['vencimiento','Vencimiento calendario'],['vidaTotal','Vida total asignada'],['tsn','Horas totales TSN'],['tsnRemanente','Horas remanentes TSN'],['requiereOverhaul','¿Requiere overhaul?'],['motivo','Motivo']
-];
-const defaultData = [
- {tipo:'Aeronave',componente:'Mi-8MTV-1',serie:'96019',taller:'Helicentro',fechaOverhaul:'2020-03-20',recursoProximo:2000,consumidoTSO:860,remanente:1140,unidad:'Horas TSO',tiempoCalendario:'8 años',vencimiento:'2028-03-20',vidaTotal:18000,tsn:3324.7,tsnRemanente:14676,requiereOverhaul:'No',motivo:'Control de vencimientos'},
- {tipo:'Motor',componente:'Motor 1 TV3-117BM',serie:'7087882200433',taller:'URAL',fechaOverhaul:'2016-04-12',recursoProximo:1500,consumidoTSO:828.5,remanente:671.5,unidad:'Horas TSO',tiempoCalendario:'10 años',vencimiento:'2026-04-12',vidaTotal:4500,tsn:2914.5,tsnRemanente:1585.5,requiereOverhaul:'Sí',motivo:'Vencimiento calendario'},
- {tipo:'Motor',componente:'Motor 2 TV3-117BM',serie:'7087884000357',taller:'BORYSFEN',fechaOverhaul:'2016-04-21',recursoProximo:1500,consumidoTSO:828.5,remanente:671.5,unidad:'Horas TSO',tiempoCalendario:'10 años',vencimiento:'2026-04-21',vidaTotal:4500,tsn:4183.2,tsnRemanente:316.8,requiereOverhaul:'Sí',motivo:'Vencimiento calendario'},
- {tipo:'APU',componente:'AI-9B',serie:'7080924200355',taller:'OOO ARP Motor',fechaOverhaul:'2020-07-16',recursoProximo:600,consumidoTSO:694,remanente:-94,unidad:'Arranques',tiempoCalendario:'8 años',vencimiento:'2028-07-16',vidaTotal:'',tsn:'62:50',tsnRemanente:'',requiereOverhaul:'Sí',motivo:'Exceso de arranques'},
- {tipo:'Reductor',componente:'VR-14',serie:'L0701003MP2',taller:'AO REDUCTOR PM',fechaOverhaul:'2017-09-19',recursoProximo:2000,consumidoTSO:828,remanente:1172,unidad:'Horas',tiempoCalendario:'10 años',vencimiento:'2027-09-19',vidaTotal:'',tsn:'',tsnRemanente:'',requiereOverhaul:'No',motivo:'Seguimiento normal'}
-];
-let data = JSON.parse(localStorage.getItem('pnp501_db') || JSON.stringify(defaultData));
-function esc(x){return String(x??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function parseDateAny(s){
-  if(!s) return null;
-  s=String(s).trim();
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
-  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
-  if(m) return new Date(+m[3], +m[2]-1, +m[1]);
-  const d=new Date(s);
-  return isNaN(d)?null:d;
-}
-function toISO(d){ if(!d || isNaN(d)) return ''; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-function fmtDate(s){const d=parseDateAny(s); return d?d.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}):String(s||'');}
-function daysTo(s){const d=parseDateAny(s); if(!d)return ''; d.setHours(0,0,0,0); return Math.round((d-TODAY)/86400000)}
-function calendarYears(txt){const m=String(txt||'').match(/(\d+(?:[.,]\d+)?)/); return m?parseFloat(m[1].replace(',','.')):0;}
-function addYearsSafe(date, years){
-  if(!date || !years) return null;
-  const d=new Date(date.getTime());
-  const whole=Math.trunc(years), frac=years-whole;
-  d.setFullYear(d.getFullYear()+whole);
-  if(frac) d.setDate(d.getDate()+Math.round(frac*365.25));
-  return d;
-}
-function recalcRow(i, changedKey=''){
-  const r=data[i];
-  if(['recursoProximo','consumidoTSO','fechaOverhaul','tiempoCalendario','vidaTotal','tsn'].includes(changedKey)){
-    if(['recursoProximo','consumidoTSO'].includes(changedKey)){
-      r.remanente=+(num(r.recursoProximo)-num(r.consumidoTSO)).toFixed(1);
-    }
-    if(['fechaOverhaul','tiempoCalendario'].includes(changedKey)){
-      const base=parseDateAny(r.fechaOverhaul);
-      const years=calendarYears(r.tiempoCalendario);
-      const due=addYearsSafe(base,years);
-      if(due) r.vencimiento=toISO(due);
-    }
-    if(['vidaTotal','tsn'].includes(changedKey) && !String(r.tsn).includes(':')){
-      r.tsnRemanente=+(num(r.vidaTotal)-num(r.tsn)).toFixed(1);
-    }
-  }
-  const st=status(r);
-  const venc=daysTo(r.vencimiento);
-  if(st==='CRÍTICO'){
-    if(num(r.remanente)<0 && !String(r.motivo||'').toLowerCase().includes('exceso')) r.motivo='Recurso excedido';
-    else if(venc<0 && !String(r.motivo||'').toLowerCase().includes('venc')) r.motivo='Vencimiento calendario';
-  }
-}
-function num(v){const n=parseFloat(v); return isNaN(n)?0:n}
-function status(row){const venc=daysTo(row.vencimiento); if(String(row.requiereOverhaul).toLowerCase().startsWith('s')||num(row.remanente)<0||venc<0)return 'CRÍTICO'; if(venc<=180||num(row.remanente)<=0.15*num(row.recursoProximo))return 'ALERTA'; return 'OK'}
-function render(){localStorage.setItem('pnp501_db',JSON.stringify(data));renderTable();renderDash();}
-function renderTable(){let html='<thead><tr>'+fields.map(f=>`<th>${f[1]}</th>`).join('')+'<th>Acción</th></tr></thead><tbody>';data.forEach((r,i)=>{html+='<tr>';fields.forEach(([key,label])=>{let val=r[key]??'';
-  const numeric=['recursoProximo','consumidoTSO','remanente','vidaTotal','tsnRemanente'].includes(key);
-  if(key==='requiereOverhaul'){
-    html+=`<td><select onchange="update(${i},'${key}',this.value)"><option ${val==='Sí'?'selected':''}>Sí</option><option ${val==='No'?'selected':''}>No</option></select></td>`
-  }else if(key==='unidad'){
-    html+=`<td><select onchange="update(${i},'${key}',this.value)">${['Horas','Horas TSO','Arranques','Ciclos'].map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select></td>`
-  }else if(key==='fechaOverhaul' || key==='vencimiento'){
-    const readonly = key==='vencimiento' ? 'readonly title="Se calcula automáticamente desde Fecha último overhaul + Tiempo calendario"' : '';
-    const cls = key==='vencimiento' ? 'calc' : 'dateedit';
-    html+=`<td><input class="${cls}" type="text" placeholder="dd/mm/aaaa" value="${esc(fmtDate(val))}" ${readonly} onchange="update(${i},'${key}',this.value)"></td>`
-  }else{
-    html+=`<td><input type="${numeric?'number':'text'}" step="0.1" value="${esc(val)}" onchange="update(${i},'${key}',this.value)"></td>`
-  }});html+=`<td><button class="delete" onclick="deleteItem(${i},'tabla')">Eliminar</button></td></tr>`});html+='</tbody>';document.getElementById('dbTable').innerHTML=html;}
-function update(i,k,v){
-  if(k==='fechaOverhaul' || k==='vencimiento'){
-    const d=parseDateAny(v);
-    if(!d){ alert('Fecha inválida. Usa formato dd/mm/aaaa, por ejemplo 20/03/2020.'); renderTable(); return; }
-    data[i][k]=toISO(d);
-  } else if(['recursoProximo','consumidoTSO','remanente','vidaTotal','tsnRemanente'].includes(k)){
-    data[i][k]=v===''?'':parseFloat(v);
-  } else {
-    data[i][k]=v;
-  }
-  recalcRow(i,k);
-  render();
-}
-function addRow(){data.push({tipo:'Nuevo',componente:'Nuevo componente',serie:'',taller:'',fechaOverhaul:'2026-07-01',recursoProximo:0,consumidoTSO:0,remanente:0,unidad:'Horas',tiempoCalendario:'',vencimiento:'2026-12-31',vidaTotal:'',tsn:'',tsnRemanente:'',requiereOverhaul:'No',motivo:''});render();}
-function addAircraft(){
-  data.push({
-    tipo:'Aeronave',
-    componente:'Nueva aeronave',
-    serie:'',
-    taller:'',
-    fechaOverhaul:toISO(TODAY),
-    recursoProximo:0,
-    consumidoTSO:0,
-    remanente:0,
-    unidad:'Horas TSO',
-    tiempoCalendario:'8 años',
-    vencimiento:toISO(addYearsSafe(TODAY,8)),
-    vidaTotal:'',
-    tsn:'',
-    tsnRemanente:'',
-    requiereOverhaul:'No',
-    motivo:'Registro inicial'
-  });
-  render();
-  closeMenu();
-}
-function deleteItem(i,origin='tabla'){
-  const r=data[i];
-  if(!r) return;
-  const tipo=String(r.tipo||'registro').toLowerCase();
-  const nombre=String(r.componente||`#${i+1}`);
-  if(confirm(`¿Eliminar ${tipo}: ${nombre}?`)){
-    data.splice(i,1);
-    render();
-    if(origin==='menu') closeMenu();
-  }
-}
-function deleteRow(i){deleteItem(i,'tabla');}
-function resetData(){if(confirm('¿Restaurar datos iniciales?')){data=JSON.parse(JSON.stringify(defaultData));render();}}
-function closeMenu(){
-  const menu=document.getElementById('mainMenu');
-  const btn=document.getElementById('menuToggle');
-  if(!menu || !btn) return;
-  menu.classList.remove('open');
-  btn.setAttribute('aria-expanded','false');
-}
-function toggleMenu(){
-  const menu=document.getElementById('mainMenu');
-  const btn=document.getElementById('menuToggle');
-  if(!menu || !btn) return;
-  const isOpen=menu.classList.toggle('open');
-  btn.setAttribute('aria-expanded',isOpen?'true':'false');
-}
-function initMenu(){
-  const menu=document.getElementById('mainMenu');
-  const btn=document.getElementById('menuToggle');
-  if(!menu || !btn) return;
-  btn.addEventListener('click',toggleMenu);
-  document.addEventListener('click',ev=>{
-    if(!menu.contains(ev.target) && !btn.contains(ev.target)) closeMenu();
-  });
-  window.addEventListener('resize',()=>{
-    if(window.innerWidth>960) closeMenu();
-  });
-}
-function renderDash(){const total=data.length, crit=data.filter(r=>status(r)==='CRÍTICO').length, alert=data.filter(r=>status(r)==='ALERTA').length, ok=data.filter(r=>status(r)==='OK').length; const minDays=Math.min(...data.map(r=>daysTo(r.vencimiento)).filter(v=>v!==''));
- document.getElementById('kpis').innerHTML=`<div class="kpi"><span>Total componentes</span><b>${total}</b></div><div class="kpi red"><span>Críticos / overhaul</span><b>${crit}</b></div><div class="kpi orange"><span>Alertas preventivas</span><b>${alert}</b></div><div class="kpi green"><span>OK</span><b>${ok}</b></div><div class="kpi ${minDays<0?'red':'orange'}"><span>Vencimiento más cercano</span><b>${minDays}</b><span>días</span></div>`;
- document.getElementById('cards').innerHTML=data.map((r,i)=>{const st=status(r);const cls=st==='CRÍTICO'?'redbg':st==='ALERTA'?'orangebg':'greenbg'; const rem=`${r.remanente} ${r.unidad}`;return `<div class="card ${cls}"><span class="badge">${st}</span><h3>${esc(r.componente)}</h3><p><b>Serie:</b> ${esc(r.serie)}</p><p><b>Taller:</b> ${esc(r.taller)}</p><p><b>Overhaul:</b> ${fmtDate(r.fechaOverhaul)}</p><p><b>Remanente:</b> ${esc(rem)}</p><p><b>Vence:</b> ${fmtDate(r.vencimiento)} (${daysTo(r.vencimiento)} días)</p><p><b>Motivo:</b> ${esc(r.motivo)}</p><div class="card-actions"><button class="card-delete" onclick="deleteItem(${i},'card')">Eliminar</button></div></div>`}).join('');
- document.getElementById('bars').innerHTML=data.map(r=>{const used=num(r.consumidoTSO), lim=Math.max(num(r.recursoProximo),1), p=Math.max(0,Math.min(100,used/lim*100));const st=status(r);const c=st==='CRÍTICO'?'red':st==='ALERTA'?'orange':'green';return `<p><b>${esc(r.componente)}</b> <span class="small">${used}/${lim} ${esc(r.unidad)} · remanente ${esc(r.remanente)}</span></p><div class="bar"><div class="fill ${c}" style="width:${p}%"></div></div>`}).join('');
- const risk=Math.round((crit+alert*.5)/Math.max(total,1)*100);document.getElementById('donut').style.setProperty('--riskDeg',`${risk*3.6}deg`);document.getElementById('donutText').innerHTML=`<span>${risk}%<br><small>riesgo</small></span>`;document.getElementById('riskNote').textContent=`${crit} componente(s) críticos, ${alert} en alerta y ${ok} OK. Priorizar overhaul, vencimientos calendario y recursos negativos.`;
- document.getElementById('timeline').innerHTML=[...data].sort((a,b)=>daysTo(a.vencimiento)-daysTo(b.vencimiento)).map(r=>{const d=daysTo(r.vencimiento);const cl=d<0?'status-crit':d<=180?'status-warn':'status-ok';return `<div class="tl"><div class="date">${fmtDate(r.vencimiento)}</div><div>${esc(r.componente)}<br><span class="small">${esc(r.tiempoCalendario)} · ${esc(r.motivo)}</span></div><div class="days ${cl}">${d} días</div></div>`}).join('');}
-function excelXml(){
- const rowsBase=[fields.map(f=>f[1]),...data.map(r=>fields.map(([k])=>r[k]??''))];
- const dash=[['Indicador','Valor'],['Total componentes',data.length],['Críticos / Overhaul',data.filter(r=>status(r)==='CRÍTICO').length],['Alertas preventivas',data.filter(r=>status(r)==='ALERTA').length],['Componentes OK',data.filter(r=>status(r)==='OK').length],[],['Componente','Serie','Estado','Recurso asignado','Consumido TSO','Remanente','Unidad','Vencimiento','Días al vencimiento','Requiere overhaul','Motivo'],...data.map(r=>[r.componente,r.serie,status(r),r.recursoProximo,r.consumidoTSO,r.remanente,r.unidad,fmtDate(r.vencimiento),daysTo(r.vencimiento),r.requiereOverhaul,r.motivo])];
- function sheet(name,rows){return `<Worksheet ss:Name="${name}"><Table>`+rows.map(row=>'<Row>'+row.map(v=>{const isNum=typeof v==='number'&&!isNaN(v);return `<Cell><Data ss:Type="${isNum?'Number':'String'}">${esc(v)}</Data></Cell>`}).join('')+'</Row>').join('')+'</Table></Worksheet>'}
- return `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style></Styles>${sheet('Base_Datos',rowsBase)}${sheet('Dashboard',dash)}</Workbook>`
-}
-function downloadExcel(){const blob=new Blob([excelXml()],{type:'application/vnd.ms-excel;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dashboard_pnp501_base_datos_dashboard.xls';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href)}
-data.forEach((_,i)=>recalcRow(i,'fechaOverhaul'));
-initMenu();
-render();
-</script>
 </body>
 </html>
