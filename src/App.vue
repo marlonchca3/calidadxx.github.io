@@ -47,7 +47,9 @@
           <div class="top-actions">
             <div class="chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
             <div class="chip">01/07/2026 <span>◷</span></div>
-            <div class="chip">Firebase <span :class="{ 'sync-error': cloudStatusError }">{{ cloudStatus }}</span></div>
+            <div class="chip" :title="cloudErrorMessage || cloudStatus">
+              Firebase <span :class="{ 'sync-error': cloudStatusError }">{{ cloudStatus }}</span>
+            </div>
             <div class="auth-box">
               <span class="auth-status">{{ authStatus }}</span>
               <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar con Google</button>
@@ -303,9 +305,6 @@ const defaultRowsPnp501 = [
 ];
 
 function cloneData(value) {
-  if (typeof structuredClone === "function") {
-    return structuredClone(value);
-  }
   return JSON.parse(JSON.stringify(value));
 }
 
@@ -395,6 +394,7 @@ export default {
       authHint: "El acceso por correo es solo lectura.",
       authHintError: false,
       authReady: false,
+      cloudErrorMessage: "",
       cloudStatus: "Local",
       cloudStatusError: false,
       currentUser: null,
@@ -621,9 +621,16 @@ export default {
       return true;
     },
 
-    updateCloudStatus(message, isError = false) {
+    updateCloudStatus(message, isError = false, detail = "") {
       this.cloudStatus = message;
       this.cloudStatusError = isError;
+      this.cloudErrorMessage = detail;
+    },
+
+    getFirebaseErrorMessage(error) {
+      const code = error && error.code ? error.code : "firebase-error";
+      const message = error && error.message ? error.message : "Error desconocido de Firebase.";
+      return `${code}: ${message}`;
     },
 
     getFleetDocRef() {
@@ -700,10 +707,12 @@ export default {
           this.isApplyingRemoteFleet = false;
         });
         this.updateCloudStatus("Sincronizado");
-      }, () => {
+      }, (error) => {
+        const detail = this.getFirebaseErrorMessage(error);
+        console.error("Firestore read error:", error);
         this.firestoreUnsubscribe = null;
-        this.updateCloudStatus("Sin acceso", true);
-        this.updateLoginHint("No se pudo leer Firestore. Revisa las reglas de Firebase.", true);
+        this.updateCloudStatus("Error lectura", true, detail);
+        this.updateLoginHint(`No se pudo leer Firestore. ${detail}`, true);
       });
     },
 
@@ -727,9 +736,11 @@ export default {
         }, { merge: true });
         this.updateCloudStatus("Guardado");
         return true;
-      } catch {
-        this.updateCloudStatus("Error", true);
-        this.updateLoginHint("No se pudo guardar en Firestore. Revisa permisos del usuario editor.", true);
+      } catch (error) {
+        const detail = this.getFirebaseErrorMessage(error);
+        console.error("Firestore write error:", error);
+        this.updateCloudStatus("Error escritura", true, detail);
+        this.updateLoginHint(`No se pudo guardar en Firestore. ${detail}`, true);
         return false;
       } finally {
         this.isSavingToFirestore = false;
@@ -926,7 +937,8 @@ export default {
         const provider = new window.firebase.auth.GoogleAuthProvider();
         await window.firebase.auth().signInWithPopup(provider);
         this.updateLoginHint("Ingreso correcto con Google.");
-      } catch {
+      } catch (error) {
+        console.error("Google sign-in error:", error);
         this.updateLoginHint("No se pudo iniciar sesion con Google.", true);
       }
     },
@@ -977,9 +989,10 @@ export default {
         await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js");
         await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js");
         await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js");
-      } catch {
+      } catch (error) {
+        console.error("Firebase SDK load error:", error);
         this.updateLoginHint("Google no esta disponible. Usa el acceso por correo.", true);
-        this.updateCloudStatus("Sin conexion", true);
+        this.updateCloudStatus("Sin conexion", true, this.getFirebaseErrorMessage(error));
         return;
       }
 
