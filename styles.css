@@ -597,6 +597,16 @@ body.auth-locked {
   cursor: pointer;
 }
 
+.danger-btn {
+  border-color: rgba(255, 79, 79, 0.55);
+  background: rgba(122, 24, 34, 0.72);
+  color: #ffd4d4;
+}
+
+.danger-btn:hover {
+  background: rgba(167, 37, 49, 0.85);
+}
+
 .auth-btn:disabled,
 .auth-modal-btn:disabled,
 .table-btn:disabled,
@@ -705,6 +715,12 @@ th {
 .aircraft-card.active {
   border-color: rgba(104, 165, 255, 0.8);
   box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.25);
+}
+
+.aircraft-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .aircraft-form {

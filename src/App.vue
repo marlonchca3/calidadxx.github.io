@@ -72,7 +72,17 @@
                     <h3>{{ aircraft.code }}</h3>
                     <p>{{ aircraft.name }}</p>
                     <p>Componentes: {{ aircraft.rows.length }}</p>
-                    <button class="table-btn" type="button" @click="openAircraft(aircraft.id)">Abrir</button>
+                    <div class="aircraft-actions">
+                      <button class="table-btn" type="button" @click="openAircraft(aircraft.id)">Abrir</button>
+                      <button
+                        v-if="canDeleteAircraft(aircraft)"
+                        class="table-btn danger-btn"
+                        type="button"
+                        @click="deleteAircraft(aircraft.id)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </article>
                 </div>
                 <p v-if="fleet.aircrafts.length === 0" class="empty-note">No hay aeronaves registradas.</p>
@@ -268,6 +278,7 @@
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
+const PROTECTED_AIRCRAFT_IDS = ["pnp-501", "pnp-506"];
 const TODAY = new Date("2026-07-01T00:00:00");
 const OWNER_EMAIL = "marlonchca3@gmail.com";
 const READER_EMAIL_HASH = "cf30f164237b2f843b303d131f806667d66f53df7f853704ad788c586255158b";
@@ -826,6 +837,38 @@ export default {
         window.alert("La aeronave se creo localmente, pero Firebase no la pudo sincronizar. Revisa reglas y login.");
       }
       this.navigate("base-datos");
+    },
+
+    canDeleteAircraft(aircraft) {
+      return this.isOwner && aircraft && !PROTECTED_AIRCRAFT_IDS.includes(aircraft.id);
+    },
+
+    async deleteAircraft(aircraftId) {
+      if (!this.isOwner) {
+        window.alert("Solo el propietario puede eliminar aeronaves.");
+        return;
+      }
+
+      const aircraft = this.fleet.aircrafts.find((item) => item.id === aircraftId);
+      if (!this.canDeleteAircraft(aircraft)) {
+        window.alert("Esta aeronave base no se puede eliminar.");
+        return;
+      }
+
+      const accepted = window.confirm(`Deseas eliminar la aeronave ${aircraft.code}?`);
+      if (!accepted) {
+        return;
+      }
+
+      this.fleet.aircrafts = this.fleet.aircrafts.filter((item) => item.id !== aircraftId);
+      if (this.fleet.selectedId === aircraftId) {
+        this.fleet.selectedId = this.fleet.aircrafts[0] ? this.fleet.aircrafts[0].id : "";
+      }
+
+      const saved = await this.persistFleet();
+      if (!saved) {
+        window.alert("La aeronave se elimino localmente, pero Firebase no pudo sincronizar el cambio.");
+      }
     },
 
     async addRow() {
