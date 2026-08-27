@@ -392,6 +392,7 @@ export default {
       firestoreUnsubscribe: null,
       isOwner: false,
       isApplyingRemoteFleet: false,
+      isSavingToFirestore: false,
       localReaderUser: null,
       mobileMenuOpen: false,
       newAircraft: { code: "", name: "" },
@@ -601,11 +602,12 @@ export default {
   },
 
   methods: {
-    persistFleet() {
+    async persistFleet() {
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(this.fleet));
       if (!this.isApplyingRemoteFleet) {
-        this.saveFleetToFirestore();
+        return this.saveFleetToFirestore();
       }
+      return true;
     },
 
     updateCloudStatus(message, isError = false) {
@@ -661,6 +663,10 @@ export default {
 
       this.updateCloudStatus("Conectando");
       this.firestoreUnsubscribe = ref.onSnapshot(async (snapshot) => {
+        if (this.isSavingToFirestore && !snapshot.metadata.hasPendingWrites) {
+          return;
+        }
+
         if (!snapshot.exists) {
           this.updateCloudStatus("Inicial");
           if (this.isOwner) {
@@ -684,6 +690,7 @@ export default {
         });
         this.updateCloudStatus("Sincronizado");
       }, () => {
+        this.firestoreUnsubscribe = null;
         this.updateCloudStatus("Sin acceso", true);
         this.updateLoginHint("No se pudo leer Firestore. Revisa las reglas de Firebase.", true);
       });
@@ -691,15 +698,16 @@ export default {
 
     async saveFleetToFirestore(force = false) {
       if ((!this.isOwner && !force) || !this.dbReady || this.isApplyingRemoteFleet) {
-        return;
+        return false;
       }
 
       const ref = this.getFleetDocRef();
       if (!ref) {
-        return;
+        return false;
       }
 
       try {
+        this.isSavingToFirestore = true;
         this.updateCloudStatus("Guardando");
         await ref.set({
           fleet: cloneData(this.fleet),
@@ -707,9 +715,13 @@ export default {
           updatedBy: this.currentUser && this.currentUser.email ? this.currentUser.email : OWNER_EMAIL
         }, { merge: true });
         this.updateCloudStatus("Guardado");
+        return true;
       } catch {
         this.updateCloudStatus("Error", true);
         this.updateLoginHint("No se pudo guardar en Firestore. Revisa permisos del usuario editor.", true);
+        return false;
+      } finally {
+        this.isSavingToFirestore = false;
       }
     },
 
@@ -776,16 +788,16 @@ export default {
       window.setTimeout(() => element.classList.remove("jump-highlight"), 1200);
     },
 
-    openAircraft(aircraftId) {
+    async openAircraft(aircraftId) {
       if (!aircraftId) {
         return;
       }
       this.fleet.selectedId = aircraftId;
-      this.persistFleet();
+      await this.persistFleet();
       this.navigate("dashboard");
     },
 
-    createAircraft() {
+    async createAircraft() {
       if (!this.isOwner) {
         window.alert("Solo el propietario puede crear aeronaves.");
         return;
@@ -809,11 +821,14 @@ export default {
       this.fleet.selectedId = id;
       this.newAircraft.code = "";
       this.newAircraft.name = "";
-      this.persistFleet();
+      const saved = await this.persistFleet();
+      if (!saved) {
+        window.alert("La aeronave se creo localmente, pero Firebase no la pudo sincronizar. Revisa reglas y login.");
+      }
       this.navigate("base-datos");
     },
 
-    addRow() {
+    async addRow() {
       if (!this.isOwner) {
         window.alert("Solo el propietario puede editar.");
         return;
@@ -832,10 +847,10 @@ export default {
         remaining: "0 h",
         due: "01/07/2027"
       });
-      this.persistFleet();
+      await this.persistFleet();
     },
 
-    resetDb() {
+    async resetDb() {
       if (!this.isOwner) {
         window.alert("Solo el propietario puede editar.");
         return;
@@ -845,7 +860,7 @@ export default {
         return;
       }
       this.currentAircraft.rows = this.currentAircraft.id === "pnp-501" ? cloneData(defaultRowsPnp501) : [];
-      this.persistFleet();
+      await this.persistFleet();
     },
 
     setMobileMenuOpen(open) {
@@ -937,9 +952,8 @@ export default {
 
       this.authReady = true;
       this.dbReady = true;
-      this.subscribeFleetFromFirestore();
 
-      window.firebase.auth().onAuthStateChanged((user) => {
+      window.firebase.auth().onAuthStateChanged(async (user) => {
         this.currentUser = user;
         if (user) {
           this.localReaderUser = null;
@@ -958,8 +972,10 @@ export default {
           this.updateLoginHint("El acceso por correo es solo lectura.");
         }
 
+        this.subscribeFleetFromFirestore();
+
         if (this.isOwner) {
-          this.saveFleetToFirestore();
+          await this.saveFleetToFirestore();
         }
       });
     }
