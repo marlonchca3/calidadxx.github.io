@@ -189,6 +189,10 @@ body.auth-locked {
   gap: 8px;
 }
 
+.sync-error {
+  color: #ffc0c0;
+}
+
 .auth-box {
   display: flex;
   gap: 8px;

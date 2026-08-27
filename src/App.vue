@@ -47,7 +47,7 @@
           <div class="top-actions">
             <div class="chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
             <div class="chip">01/07/2026 <span>◷</span></div>
-            <div class="chip">Notificaciones <span>●</span></div>
+            <div class="chip">Firebase <span :class="{ 'sync-error': cloudStatusError }">{{ cloudStatus }}</span></div>
             <div class="auth-box">
               <span class="auth-status">{{ authStatus }}</span>
               <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar con Google</button>
@@ -266,6 +266,8 @@
 
 <script>
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
+const FIRESTORE_COLLECTION = "dashboards";
+const FIRESTORE_DOCUMENT = "main";
 const TODAY = new Date("2026-07-01T00:00:00");
 const OWNER_EMAIL = "marlonchca3@gmail.com";
 const READER_EMAIL_HASH = "cf30f164237b2f843b303d131f806667d66f53df7f853704ad788c586255158b";
@@ -382,9 +384,14 @@ export default {
       authHint: "El acceso por correo es solo lectura.",
       authHintError: false,
       authReady: false,
+      cloudStatus: "Local",
+      cloudStatusError: false,
       currentUser: null,
+      dbReady: false,
       fleet: loadFleet(),
+      firestoreUnsubscribe: null,
       isOwner: false,
+      isApplyingRemoteFleet: false,
       localReaderUser: null,
       mobileMenuOpen: false,
       newAircraft: { code: "", name: "" },
@@ -588,11 +595,122 @@ export default {
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
     document.body.classList.remove("auth-locked");
+    if (this.firestoreUnsubscribe) {
+      this.firestoreUnsubscribe();
+    }
   },
 
   methods: {
     persistFleet() {
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(this.fleet));
+      if (!this.isApplyingRemoteFleet) {
+        this.saveFleetToFirestore();
+      }
+    },
+
+    updateCloudStatus(message, isError = false) {
+      this.cloudStatus = message;
+      this.cloudStatusError = isError;
+    },
+
+    getFleetDocRef() {
+      if (!window.firebase || !window.firebase.firestore) {
+        return null;
+      }
+      return window.firebase.firestore().collection(FIRESTORE_COLLECTION).doc(FIRESTORE_DOCUMENT);
+    },
+
+    getValidFleet(value) {
+      if (!value || !Array.isArray(value.aircrafts) || value.aircrafts.length === 0) {
+        return null;
+      }
+
+      const selectedId = value.selectedId && value.aircrafts.some((aircraft) => aircraft.id === value.selectedId)
+        ? value.selectedId
+        : value.aircrafts[0].id;
+
+      return {
+        selectedId,
+        aircrafts: value.aircrafts.map((aircraft) => ({
+          id: String(aircraft.id || ""),
+          code: String(aircraft.code || ""),
+          name: String(aircraft.name || ""),
+          rows: Array.isArray(aircraft.rows) ? aircraft.rows.map((row) => ({
+            component: String(row.component || ""),
+            series: String(row.series || ""),
+            workshop: String(row.workshop || ""),
+            overhaul: String(row.overhaul || ""),
+            assigned: String(row.assigned || ""),
+            consumed: String(row.consumed || ""),
+            remaining: String(row.remaining || ""),
+            due: String(row.due || "")
+          })) : []
+        })).filter((aircraft) => aircraft.id && aircraft.code)
+      };
+    },
+
+    subscribeFleetFromFirestore() {
+      const ref = this.getFleetDocRef();
+      if (!ref) {
+        return;
+      }
+
+      if (this.firestoreUnsubscribe) {
+        this.firestoreUnsubscribe();
+      }
+
+      this.updateCloudStatus("Conectando");
+      this.firestoreUnsubscribe = ref.onSnapshot(async (snapshot) => {
+        if (!snapshot.exists) {
+          this.updateCloudStatus("Inicial");
+          if (this.isOwner) {
+            await this.saveFleetToFirestore(true);
+          }
+          return;
+        }
+
+        const data = snapshot.data() || {};
+        const remoteFleet = this.getValidFleet(data.fleet);
+        if (!remoteFleet) {
+          this.updateCloudStatus("Datos invalidos", true);
+          return;
+        }
+
+        this.isApplyingRemoteFleet = true;
+        this.fleet = remoteFleet;
+        localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(remoteFleet));
+        this.$nextTick(() => {
+          this.isApplyingRemoteFleet = false;
+        });
+        this.updateCloudStatus("Sincronizado");
+      }, () => {
+        this.updateCloudStatus("Sin acceso", true);
+        this.updateLoginHint("No se pudo leer Firestore. Revisa las reglas de Firebase.", true);
+      });
+    },
+
+    async saveFleetToFirestore(force = false) {
+      if ((!this.isOwner && !force) || !this.dbReady || this.isApplyingRemoteFleet) {
+        return;
+      }
+
+      const ref = this.getFleetDocRef();
+      if (!ref) {
+        return;
+      }
+
+      try {
+        this.updateCloudStatus("Guardando");
+        await ref.set({
+          fleet: cloneData(this.fleet),
+          updatedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: this.currentUser && this.currentUser.email ? this.currentUser.email : OWNER_EMAIL
+        }, { merge: true });
+        this.updateCloudStatus("Guardado");
+      } catch {
+        this.updateCloudStatus("Error", true);
+        this.updateLoginHint("No se pudo guardar en Firestore. Revisa permisos del usuario editor.", true);
+      }
     },
 
     updateLoginHint(message, isError = false) {
@@ -800,13 +918,16 @@ export default {
       try {
         await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js");
         await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js");
+        await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js");
       } catch {
         this.updateLoginHint("Google no esta disponible. Usa el acceso por correo.", true);
+        this.updateCloudStatus("Sin conexion", true);
         return;
       }
 
-      if (!window.firebase) {
+      if (!window.firebase || !window.firebase.firestore) {
         this.updateLoginHint("Google no esta disponible. Usa el acceso por correo.", true);
+        this.updateCloudStatus("Sin Firebase", true);
         return;
       }
 
@@ -815,6 +936,9 @@ export default {
       }
 
       this.authReady = true;
+      this.dbReady = true;
+      this.subscribeFleetFromFirestore();
+
       window.firebase.auth().onAuthStateChanged((user) => {
         this.currentUser = user;
         if (user) {
@@ -832,6 +956,10 @@ export default {
         }
         if (!user && !this.localReaderUser) {
           this.updateLoginHint("El acceso por correo es solo lectura.");
+        }
+
+        if (this.isOwner) {
+          this.saveFleetToFirestore();
         }
       });
     }
