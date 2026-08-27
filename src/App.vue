@@ -182,7 +182,7 @@
             <div class="table-title">
               <h2>Base de Datos de Componentes</h2>
               <div class="table-tools">
-                <button class="table-btn" type="button" :disabled="!isOwner" @click="addRow">Agregar fila</button>
+                <button class="table-btn" type="button" :disabled="!isOwner" @click="addRow">Agregar componente</button>
                 <button class="table-btn" type="button" :disabled="!isOwner" @click="resetDb">Restaurar datos</button>
               </div>
             </div>
