@@ -280,7 +280,6 @@
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
-const PROTECTED_AIRCRAFT_IDS = ["pnp-501", "pnp-506"];
 const TODAY = new Date("2026-07-01T00:00:00");
 const OWNER_EMAIL = "marlonchca3@gmail.com";
 const READER_EMAIL_HASH = "cf30f164237b2f843b303d131f806667d66f53df7f853704ad788c586255158b";
@@ -851,7 +850,7 @@ export default {
     },
 
     canDeleteAircraft(aircraft) {
-      return this.isOwner && aircraft && !PROTECTED_AIRCRAFT_IDS.includes(aircraft.id);
+      return this.isOwner && Boolean(aircraft);
     },
 
     async deleteAircraft(aircraftId) {
@@ -862,7 +861,7 @@ export default {
 
       const aircraft = this.fleet.aircrafts.find((item) => item.id === aircraftId);
       if (!this.canDeleteAircraft(aircraft)) {
-        window.alert("Esta aeronave base no se puede eliminar.");
+        window.alert("No se puede eliminar esta aeronave.");
         return;
       }
 
