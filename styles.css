@@ -156,7 +156,7 @@ body.auth-locked {
   font-weight: 700;
 }
 
-.title-wrap h1 {
+.topbar-brand h1 {
   margin: 0;
   font-size: 30px;
   line-height: 1;
@@ -259,6 +259,10 @@ body.auth-locked {
   font-size: 13px;
 }
 
+.auth-hint.error {
+  color: #ffc0c0;
+}
+
 .auth-modal-btn {
   width: 100%;
   border: 1px solid var(--line-strong);
@@ -335,6 +339,10 @@ body.auth-locked {
   color: #ffe2a2;
   font-size: 12px;
   display: none;
+}
+
+.readonly-note.visible {
+  display: block;
 }
 
 .grid-kpi {
@@ -583,6 +591,15 @@ body.auth-locked {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.auth-btn:disabled,
+.auth-modal-btn:disabled,
+.table-btn:disabled,
+.cell-input:disabled,
+.aircraft-form input:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .table-wrap {

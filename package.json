@@ -1,0 +1,18 @@
+{
+  "name": "calidadxx-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dashboard DIVMAAER creado con Vue.js, HTML, CSS y JavaScript.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 8000",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 8000",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "gh-pages": "^6.3.0",
+    "vite": "^5.4.21",
+    "vue": "^3.5.22"
+  }
+}
