@@ -36,7 +36,7 @@
             </button>
             <div class="topbar-brand">
               <p class="topbar-kicker">Control de Calidad</p>
-              <h1>Sistema de Gestion de Recursos Aeronauticos</h1>
+              <h1>Sistema de Gestion de Recursos Aeronauticos - MATRIX</h1>
             </div>
           </div>
 
