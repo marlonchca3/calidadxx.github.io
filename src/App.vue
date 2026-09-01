@@ -7,16 +7,28 @@
           <p class="brand-sub">{{ currentAircraft ? currentAircraft.code : "CONTROL DE CALIDAD" }}</p>
         </div>
 
-        <nav class="menu">
+        <button
+          class="menu-toggle"
+          type="button"
+          :aria-expanded="String(menuExpanded)"
+          aria-controls="sidebar-menu"
+          aria-label="Mostrar u ocultar menu"
+          @click="menuExpanded = !menuExpanded"
+        >
+          <span class="hamburger-icon" aria-hidden="true">☰</span>
+        </button>
+
+        <nav id="sidebar-menu" class="menu" :class="{ collapsed: !menuExpanded }">
           <a
             v-for="item in menuItems"
             :key="item.label"
             class="menu-item"
-            :class="{ active: activeView === item.target }"
+            :class="{ active: activeMenuLabel === item.label }"
             :href="`#${item.target}`"
-            @click.prevent="navigate(item.target)"
+            @click.prevent="navigate(item.target, item.label)"
           >
-            {{ item.label }}
+            <span class="menu-icon" aria-hidden="true">{{ item.icon }}</span>
+            <span class="menu-label">{{ item.label }}</span>
           </a>
         </nav>
 
@@ -35,8 +47,8 @@
               ☰
             </button>
             <div class="topbar-brand">
-              <p class="topbar-kicker">Control de Calidad</p>
-              <h1>Sistema de Gestion de Recursos Aeronauticos - MATRIX</h1>
+              <p class="topbar-kicker">CONTROL DE CALIDAD</p>
+              <h1>Sistema de Gestión de Recursos Aeronáuticos</h1>
             </div>
           </div>
 
@@ -45,10 +57,11 @@
           </div>
 
           <div class="top-actions">
-            <div class="chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
-            <div class="chip">01/07/2026 <span>◷</span></div>
-            <div class="chip" :title="cloudErrorMessage || cloudStatus">
-              Firebase <span :class="{ 'sync-error': cloudStatusError }">{{ cloudStatus }}</span>
+            <div class="chip aircraft-chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
+            <div class="chip date-chip">01/07/2026 <span>◷</span></div>
+            <div class="chip firebase-chip" :class="{ 'sync-error': cloudStatusError }" :title="cloudErrorMessage || cloudStatus">
+              <span class="sync-dot"></span>
+              <span>Firebase {{ cloudStatusText }}</span>
             </div>
             <div class="auth-box">
               <span class="auth-status">{{ authStatus }}</span>
@@ -102,37 +115,55 @@
 
         <template v-if="activeView !== 'aeronaves'">
           <section id="dashboard" ref="dashboard" class="grid-kpi view">
-            <article class="kpi">
-              <p class="kpi-title">Total Componentes</p>
+            <article class="kpi kpi-info">
+              <div class="kpi-head">
+                <p class="kpi-title">Total Componentes</p>
+                <span class="kpi-icon" aria-hidden="true">▦</span>
+              </div>
               <p class="kpi-value">{{ metrics.total }}</p>
               <p class="kpi-meta"><span>Registrados</span><strong>100%</strong></p>
+              <div class="kpi-progress"><span style="width: 100%"></span></div>
             </article>
 
-            <article class="kpi">
-              <p class="kpi-title">Criticos / Overhaul</p>
+            <article class="kpi kpi-danger">
+              <div class="kpi-head">
+                <p class="kpi-title">Críticos / Overhaul</p>
+                <span class="kpi-icon" aria-hidden="true">!</span>
+              </div>
               <p class="kpi-value">{{ metrics.critical }}</p>
-              <p class="kpi-meta"><span>Requieren atencion</span><strong>{{ pct(metrics.critical) }}</strong></p>
+              <p class="kpi-meta"><span>Requieren atención</span><strong>{{ pct(metrics.critical) }}</strong></p>
+              <div class="kpi-progress"><span :style="{ width: pct(metrics.critical) }"></span></div>
             </article>
 
-            <article class="kpi">
-              <p class="kpi-title">Alertas Preventivas</p>
+            <article class="kpi kpi-warn">
+              <div class="kpi-head">
+                <p class="kpi-title">Alertas Preventivas</p>
+                <span class="kpi-icon" aria-hidden="true">△</span>
+              </div>
               <p class="kpi-value">{{ metrics.alert }}</p>
               <p class="kpi-meta"><span>Seguimiento cercano</span><strong>{{ pct(metrics.alert) }}</strong></p>
+              <div class="kpi-progress"><span :style="{ width: pct(metrics.alert) }"></span></div>
             </article>
 
-            <article class="kpi">
-              <p class="kpi-title">En Condiciones</p>
+            <article class="kpi kpi-ok">
+              <div class="kpi-head">
+                <p class="kpi-title">En Condiciones</p>
+                <span class="kpi-icon" aria-hidden="true">✓</span>
+              </div>
               <p class="kpi-value">{{ metrics.ok }}</p>
               <p class="kpi-meta"><span>Operativos</span><strong>{{ pct(metrics.ok) }}</strong></p>
+              <div class="kpi-progress"><span :style="{ width: pct(metrics.ok) }"></span></div>
             </article>
 
-            <article class="kpi">
-              <p class="kpi-title">Riesgo Global</p>
+            <article class="kpi risk-card">
               <div class="kpi-risk">
                 <div class="ring" :style="riskRingStyle"><span>{{ metrics.risk }}%</span></div>
-                <p class="kpi-meta">
-                  <strong :style="{ color: riskLabel.color, fontSize: '20px' }">{{ riskLabel.label }}</strong>
-                </p>
+                <div class="risk-copy">
+                  <p class="kpi-title">Riesgo Global</p>
+                  <strong :style="{ color: riskLabel.color }">{{ metrics.risk }}%</strong>
+                  <span>Nivel: {{ riskLabel.label }}</span>
+                  <small>{{ riskAttentionText }}</small>
+                </div>
               </div>
             </article>
           </section>
@@ -199,9 +230,12 @@
                     <th>Serie</th>
                     <th>Taller</th>
                     <th>Ultimo Overhaul</th>
-                    <th>Asignado</th>
-                    <th>Consumido</th>
-                    <th>Remanente</th>
+                    <th>Asignado TBO (hrs)</th>
+                    <th>Asignado TBO (años)</th>
+                    <th>Consumido TBO hrs</th>
+                    <th>Consumido TBO años</th>
+                    <th>Remanente TBO (hrs)</th>
+                    <th>Remanente TBO (años)</th>
                     <th>Vencimiento</th>
                     <th>Estado</th>
                   </tr>
@@ -211,11 +245,14 @@
                     <td><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.assigned" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.consumed" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.remaining" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.due" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
+                    <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><input v-model="row.assignedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><input v-model="row.assignedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><input v-model="row.consumedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><input v-model="row.consumedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><input v-model="row.remainingTboHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
                     <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
                   </tr>
                 </tbody>
@@ -311,9 +348,49 @@ function createDefaultFleet() {
   return {
     selectedId: "pnp-501",
     aircrafts: [
-      { id: "pnp-501", code: "PNP-501", name: "Mi-17 MTV-1", rows: cloneData(defaultRowsPnp501) },
+      { id: "pnp-501", code: "PNP-501", name: "Mi-17 MTV-1", rows: cloneData(defaultRowsPnp501).map(normalizeRow) },
       { id: "pnp-506", code: "PNP-506", name: "Mi-171", rows: [] }
     ]
+  };
+}
+
+function parseNumeric(value) {
+  const numeric = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function formatNumberValue(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return "0";
+  }
+  return Number.isInteger(number) ? String(number) : String(Number(number.toFixed(2)));
+}
+
+function normalizeRow(row) {
+  const assignedTboHours = String(row.assignedTboHours ?? row.assigned ?? "");
+  const assignedTboYears = String(row.assignedTboYears ?? "");
+  const consumedTboHours = String(row.consumedTboHours ?? row.consumed ?? "");
+  const consumedTboYears = String(row.consumedTboYears ?? "");
+  const remainingTboHours = formatNumberValue(parseNumeric(assignedTboHours) - parseNumeric(consumedTboHours));
+  const remainingTboYears = formatNumberValue(parseNumeric(assignedTboYears) - parseNumeric(consumedTboYears));
+  const due = calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
+
+  return {
+    component: String(row.component || ""),
+    series: String(row.series || ""),
+    workshop: String(row.workshop || ""),
+    overhaul: String(row.overhaul || ""),
+    assigned: assignedTboHours,
+    consumed: consumedTboHours,
+    remaining: remainingTboHours,
+    assignedTboHours,
+    assignedTboYears,
+    consumedTboHours,
+    consumedTboYears,
+    remainingTboHours,
+    remainingTboYears,
+    due
   };
 }
 
@@ -331,15 +408,14 @@ function loadFleet() {
     if (!parsed.selectedId || !parsed.aircrafts.find((aircraft) => aircraft.id === parsed.selectedId)) {
       parsed.selectedId = parsed.aircrafts[0].id;
     }
+    parsed.aircrafts = parsed.aircrafts.map((aircraft) => ({
+      ...aircraft,
+      rows: Array.isArray(aircraft.rows) ? aircraft.rows.map(normalizeRow) : []
+    }));
     return parsed;
   } catch {
     return createDefaultFleet();
   }
-}
-
-function parseNumeric(value) {
-  const numeric = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(numeric) ? numeric : 0;
 }
 
 function parseEsDate(value) {
@@ -356,6 +432,34 @@ function parseEsDate(value) {
     return null;
   }
   return date;
+}
+
+function formatEsDate(date) {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${date.getFullYear()}`;
+}
+
+function addTboYears(date, yearsValue) {
+  const years = parseNumeric(yearsValue);
+  if (years <= 0) {
+    return null;
+  }
+
+  const result = new Date(date);
+  const totalMonths = Math.round(years * 12);
+  const originalDay = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + totalMonths);
+  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+  result.setDate(Math.min(originalDay, lastDay));
+  return result;
+}
+
+function calculateDueDate(overhaul, assignedTboYears) {
+  const overhaulDate = parseEsDate(overhaul);
+  const dueDate = overhaulDate ? addTboYears(overhaulDate, assignedTboYears) : null;
+  return dueDate ? formatEsDate(dueDate) : "";
 }
 
 function isFirebaseConfigReady() {
@@ -390,6 +494,7 @@ export default {
   data() {
     return {
       activeView: "dashboard",
+      activeMenuLabel: "Dashboard",
       authHint: "El acceso por correo es solo lectura.",
       authHintError: false,
       authReady: false,
@@ -404,17 +509,18 @@ export default {
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
       localReaderUser: null,
+      menuExpanded: true,
       mobileMenuOpen: false,
       newAircraft: { code: "", name: "" },
       reader: { email: "", password: "" },
       menuItems: [
-        { label: "Dashboard", target: "dashboard" },
-        { label: "Aeronaves", target: "aeronaves" },
-        { label: "Componentes", target: "dashboard" },
-        { label: "Base de datos", target: "base-datos" },
-        { label: "Alertas", target: "dashboard" },
-        { label: "Calendario", target: "dashboard" },
-        { label: "Historial", target: "dashboard" }
+        { label: "Dashboard", target: "dashboard", icon: "⌂" },
+        { label: "Aeronaves", target: "aeronaves", icon: "✈" },
+        { label: "Componentes", target: "dashboard", icon: "⚙" },
+        { label: "Base de datos", target: "base-datos", icon: "▦" },
+        { label: "Alertas", target: "dashboard", icon: "!" },
+        { label: "Calendario", target: "dashboard", icon: "◷" },
+        { label: "Historial", target: "dashboard", icon: "≡" }
       ]
     };
   },
@@ -450,6 +556,10 @@ export default {
       return `${this.currentAircraft.code} (${this.currentAircraft.name})`;
     },
 
+    cloudStatusText() {
+      return this.cloudStatus.toLowerCase();
+    },
+
     metrics() {
       const rows = this.currentRows;
       const total = rows.length;
@@ -475,8 +585,8 @@ export default {
         return days >= 0 && days <= 180;
       }).length;
 
-      const consumedTotal = rows.reduce((sum, row) => sum + parseNumeric(row.consumed), 0);
-      const remainingTotal = rows.reduce((sum, row) => sum + parseNumeric(row.remaining), 0);
+      const consumedTotal = rows.reduce((sum, row) => sum + this.rowConsumedHours(row), 0);
+      const remainingTotal = rows.reduce((sum, row) => sum + this.rowRemainingHours(row), 0);
       const risk = Math.round(((critical + alert * 0.5) / Math.max(total, 1)) * 100);
 
       return { total, critical, alert, ok, dueIn90, dueIn180, consumedTotal, remainingTotal, risk };
@@ -485,7 +595,7 @@ export default {
     riskRingStyle() {
       const degrees = Math.round((this.metrics.risk / 100) * 360);
       return {
-        background: `conic-gradient(var(--danger) 0 ${degrees}deg, #24456f ${degrees}deg 360deg)`
+        background: `conic-gradient(${this.riskLabel.color} 0 ${degrees}deg, #183458 ${degrees}deg 360deg)`
       };
     },
 
@@ -499,11 +609,16 @@ export default {
       return { label: "Bajo", color: "var(--ok)" };
     },
 
+    riskAttentionText() {
+      const attention = this.metrics.critical + this.metrics.alert;
+      return `${attention} de ${Math.max(this.metrics.total, 1)} componentes requieren atención`;
+    },
+
     panelTotals() {
       return {
-        assigned: this.currentRows.reduce((sum, row) => sum + parseNumeric(row.assigned), 0),
-        consumed: this.currentRows.reduce((sum, row) => sum + parseNumeric(row.consumed), 0),
-        remaining: this.currentRows.reduce((sum, row) => sum + parseNumeric(row.remaining), 0)
+        assigned: this.currentRows.reduce((sum, row) => sum + this.rowAssignedHours(row), 0),
+        consumed: this.currentRows.reduce((sum, row) => sum + this.rowConsumedHours(row), 0),
+        remaining: this.currentRows.reduce((sum, row) => sum + this.rowRemainingHours(row), 0)
       };
     },
 
@@ -550,11 +665,11 @@ export default {
         return [{ key: "empty", label: "Sin datos", consumed: 0, remaining: 0, consumedHeight: 16, remainingStyle: { height: "16px" } }];
       }
 
-      const maxValue = Math.max(1, ...rows.map((row) => Math.max(parseNumeric(row.consumed), Math.abs(parseNumeric(row.remaining)))));
+      const maxValue = Math.max(1, ...rows.map((row) => Math.max(this.rowConsumedHours(row), Math.abs(this.rowRemainingHours(row)))));
 
       return rows.map((row, index) => {
-        const consumed = parseNumeric(row.consumed);
-        const remaining = parseNumeric(row.remaining);
+        const consumed = this.rowConsumedHours(row);
+        const remaining = this.rowRemainingHours(row);
         const remainingStyle = {
           height: `${Math.max(10, Math.round((Math.max(Math.abs(remaining), 0) / maxValue) * 120))}px`
         };
@@ -620,6 +735,32 @@ export default {
       return true;
     },
 
+    rowAssignedHours(row) {
+      return parseNumeric(row.assignedTboHours ?? row.assigned);
+    },
+
+    rowConsumedHours(row) {
+      return parseNumeric(row.consumedTboHours ?? row.consumed);
+    },
+
+    rowRemainingHours(row) {
+      return parseNumeric(row.remainingTboHours ?? row.remaining);
+    },
+
+    updateTboDerived(row) {
+      const remainingHours = this.rowAssignedHours(row) - this.rowConsumedHours(row);
+      const remainingYears = parseNumeric(row.assignedTboYears) - parseNumeric(row.consumedTboYears);
+      const due = calculateDueDate(row.overhaul, row.assignedTboYears);
+      row.remainingTboHours = formatNumberValue(remainingHours);
+      row.remainingTboYears = formatNumberValue(remainingYears);
+      row.assigned = String(row.assignedTboHours ?? "");
+      row.consumed = String(row.consumedTboHours ?? "");
+      row.remaining = row.remainingTboHours;
+      if (due) {
+        row.due = due;
+      }
+    },
+
     updateCloudStatus(message, isError = false, detail = "") {
       this.cloudStatus = message;
       this.cloudStatusError = isError;
@@ -654,16 +795,7 @@ export default {
           id: String(aircraft.id || ""),
           code: String(aircraft.code || ""),
           name: String(aircraft.name || ""),
-          rows: Array.isArray(aircraft.rows) ? aircraft.rows.map((row) => ({
-            component: String(row.component || ""),
-            series: String(row.series || ""),
-            workshop: String(row.workshop || ""),
-            overhaul: String(row.overhaul || ""),
-            assigned: String(row.assigned || ""),
-            consumed: String(row.consumed || ""),
-            remaining: String(row.remaining || ""),
-            due: String(row.due || "")
-          })) : []
+          rows: Array.isArray(aircraft.rows) ? aircraft.rows.map(normalizeRow) : []
         })).filter((aircraft) => aircraft.id && aircraft.code)
       };
     },
@@ -751,6 +883,24 @@ export default {
       this.authHintError = isError;
     },
 
+    async ensureAnonymousFirebaseSession() {
+      if (!this.authReady || !window.firebase || !window.firebase.auth) {
+        return false;
+      }
+      if (window.firebase.auth().currentUser) {
+        return true;
+      }
+
+      try {
+        await window.firebase.auth().signInAnonymously();
+        return true;
+      } catch (error) {
+        console.error("Anonymous sign-in error:", error);
+        this.updateCloudStatus("Sin lectura", true, this.getFirebaseErrorMessage(error));
+        return false;
+      }
+    },
+
     formatMetric(value) {
       return new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value);
     },
@@ -761,7 +911,7 @@ export default {
     },
 
     getStatus(row) {
-      const remaining = parseNumeric(row.remaining);
+      const remaining = this.rowRemainingHours(row);
       const dueDate = parseEsDate(row.due);
       if (remaining < 0) {
         return "CRITICO";
@@ -770,7 +920,7 @@ export default {
         return "CRITICO";
       }
 
-      const assigned = parseNumeric(row.assigned);
+      const assigned = this.rowAssignedHours(row);
       const daysToDue = dueDate ? Math.floor((dueDate - TODAY) / 86400000) : null;
       if ((daysToDue !== null && daysToDue <= 180) || (assigned > 0 && remaining <= assigned * 0.15)) {
         return "ALERTA";
@@ -790,8 +940,9 @@ export default {
       return "ok";
     },
 
-    navigate(targetId) {
+    navigate(targetId, menuLabel = "") {
       this.activeView = targetId;
+      this.activeMenuLabel = menuLabel || (targetId === "aeronaves" ? "Aeronaves" : targetId === "base-datos" ? "Base de datos" : "Dashboard");
       this.setMobileMenuOpen(false);
       this.$nextTick(() => {
         if (targetId === "base-datos" && this.$refs.baseDatos) {
@@ -890,16 +1041,22 @@ export default {
         return;
       }
 
-      this.currentAircraft.rows.push({
+      this.currentAircraft.rows.push(normalizeRow({
         component: "Nuevo componente",
         series: "",
         workshop: "",
         overhaul: "01/07/2026",
-        assigned: "0 h",
-        consumed: "0 h",
-        remaining: "0 h",
+        assigned: "0",
+        consumed: "0",
+        remaining: "0",
+        assignedTboHours: "0",
+        assignedTboYears: "1",
+        consumedTboHours: "0",
+        consumedTboYears: "0",
+        remainingTboHours: "0",
+        remainingTboYears: "0",
         due: "01/07/2027"
-      });
+      }));
       await this.persistFleet();
     },
 
@@ -912,7 +1069,7 @@ export default {
       if (!accepted || !this.currentAircraft) {
         return;
       }
-      this.currentAircraft.rows = this.currentAircraft.id === "pnp-501" ? cloneData(defaultRowsPnp501) : [];
+      this.currentAircraft.rows = this.currentAircraft.id === "pnp-501" ? cloneData(defaultRowsPnp501).map(normalizeRow) : [];
       await this.persistFleet();
     },
 
@@ -958,6 +1115,8 @@ export default {
       this.isOwner = false;
       this.reader.password = "";
       this.updateLoginHint("Ingreso correcto. Modo solo lectura.");
+      await this.ensureAnonymousFirebaseSession();
+      this.subscribeFleetFromFirestore();
     },
 
     async signOut() {
@@ -1008,9 +1167,11 @@ export default {
       this.authReady = true;
       this.dbReady = true;
 
+      await this.ensureAnonymousFirebaseSession();
+
       window.firebase.auth().onAuthStateChanged(async (user) => {
         this.currentUser = user;
-        if (user) {
+        if (user && !user.isAnonymous) {
           this.localReaderUser = null;
         }
 
