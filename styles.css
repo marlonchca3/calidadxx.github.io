@@ -339,13 +339,23 @@ body.auth-locked {
   color: #cfe2ff;
 }
 
-.sync-dot {
+.sync-info-chip {
+  color: #dcecff;
+}
+
+.sync-dot,
+.sync-source-dot {
   width: 8px;
   height: 8px;
   border-radius: 999px;
   background: #37dd84;
   box-shadow: 0 0 10px rgba(55, 221, 132, 0.9);
   flex: 0 0 auto;
+}
+
+.sync-source-dot.remote {
+  background: #78a8ff;
+  box-shadow: 0 0 10px rgba(120, 168, 255, 0.9);
 }
 
 .firebase-chip.sync-error .sync-dot {

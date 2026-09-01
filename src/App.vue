@@ -63,6 +63,10 @@
               <span class="sync-dot"></span>
               <span>Firebase {{ cloudStatusText }}</span>
             </div>
+            <div class="chip sync-info-chip" :title="`Fuente: ${syncSourceText}`">
+              <span class="sync-source-dot" :class="{ remote: syncSource === 'remote' }"></span>
+              <span>Últ. sync: {{ lastSyncLabel }}</span>
+            </div>
             <div class="auth-box">
               <span class="auth-status">{{ authStatus }}</span>
               <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar con Google</button>
@@ -238,6 +242,7 @@
                     <th>Remanente TBO (años)</th>
                     <th>Vencimiento</th>
                     <th>Estado</th>
+                    <th>Accion</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -254,6 +259,9 @@
                     <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
                     <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
+                    <td>
+                      <button class="table-btn danger-btn" type="button" :disabled="!isOwner" @click="deleteRow(index)">Eliminar</button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -315,6 +323,7 @@
 
 <script>
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
+const DB_META_KEY = "sr_aero_fleet_meta_v1";
 const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
 const TODAY = new Date("2026-07-01T00:00:00");
@@ -342,6 +351,22 @@ const defaultRowsPnp501 = [
 
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function readFleetMeta() {
+  try {
+    return JSON.parse(localStorage.getItem(DB_META_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+function writeFleetMeta(updatedAt) {
+  try {
+    localStorage.setItem(DB_META_KEY, JSON.stringify({ updatedAt }));
+  } catch {
+    // Ignoramos errores de almacenamiento local.
+  }
 }
 
 function createDefaultFleet() {
@@ -508,7 +533,9 @@ export default {
       isOwner: false,
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
+      lastSyncAt: Number(readFleetMeta().updatedAt || Date.now()),
       localReaderUser: null,
+      syncSource: "local",
       menuExpanded: true,
       mobileMenuOpen: false,
       newAircraft: { code: "", name: "" },
@@ -558,6 +585,23 @@ export default {
 
     cloudStatusText() {
       return this.cloudStatus.toLowerCase();
+    },
+
+    syncSourceText() {
+      return this.syncSource === "remote" ? "Remoto" : "Local";
+    },
+
+    lastSyncLabel() {
+      if (!this.lastSyncAt) {
+        return "Sin datos";
+      }
+
+      return new Intl.DateTimeFormat("es-PE", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(this.lastSyncAt));
     },
 
     metrics() {
@@ -728,11 +772,29 @@ export default {
 
   methods: {
     async persistFleet() {
+      const timestamp = Date.now();
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(this.fleet));
+      writeFleetMeta(timestamp);
+      this.lastSyncAt = timestamp;
+      this.syncSource = "local";
       if (!this.isApplyingRemoteFleet) {
         return this.saveFleetToFirestore();
       }
       return true;
+    },
+
+    getRemoteUpdatedAt(data) {
+      if (!data || !data.updatedAt) {
+        return 0;
+      }
+      if (typeof data.updatedAt.toMillis === "function") {
+        return data.updatedAt.toMillis();
+      }
+      if (data.updatedAt.seconds) {
+        return Number(data.updatedAt.seconds) * 1000;
+      }
+      const parsed = new Date(data.updatedAt).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
     },
 
     rowAssignedHours(row) {
@@ -826,14 +888,26 @@ export default {
 
         const data = snapshot.data() || {};
         const remoteFleet = this.getValidFleet(data.fleet);
+        const remoteUpdatedAt = this.getRemoteUpdatedAt(data);
+        const localUpdatedAt = Number(readFleetMeta().updatedAt || 0);
+
         if (!remoteFleet) {
           this.updateCloudStatus("Datos invalidos", true);
+          return;
+        }
+
+        if (localUpdatedAt > remoteUpdatedAt && !this.isOwner) {
+          this.updateCloudStatus("Sincronizado local");
           return;
         }
 
         this.isApplyingRemoteFleet = true;
         this.fleet = remoteFleet;
         localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(remoteFleet));
+        const appliedTimestamp = remoteUpdatedAt || Date.now();
+        writeFleetMeta(appliedTimestamp);
+        this.lastSyncAt = appliedTimestamp;
+        this.syncSource = "remote";
         this.$nextTick(() => {
           this.isApplyingRemoteFleet = false;
         });
@@ -860,11 +934,16 @@ export default {
       try {
         this.isSavingToFirestore = true;
         this.updateCloudStatus("Guardando");
+        const timestamp = Date.now();
         await ref.set({
           fleet: cloneData(this.fleet),
           updatedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-          updatedBy: this.currentUser && this.currentUser.email ? this.currentUser.email : OWNER_EMAIL
+          updatedBy: this.currentUser && this.currentUser.email ? this.currentUser.email : OWNER_EMAIL,
+          updatedEpoch: timestamp
         }, { merge: true });
+        writeFleetMeta(timestamp);
+        this.lastSyncAt = timestamp;
+        this.syncSource = "local";
         this.updateCloudStatus("Guardado");
         return true;
       } catch (error) {
@@ -1070,6 +1149,26 @@ export default {
         return;
       }
       this.currentAircraft.rows = this.currentAircraft.id === "pnp-501" ? cloneData(defaultRowsPnp501).map(normalizeRow) : [];
+      await this.persistFleet();
+    },
+
+    async deleteRow(rowIndex) {
+      if (!this.isOwner) {
+        window.alert("Solo el propietario puede editar.");
+        return;
+      }
+      if (!this.currentAircraft || !Array.isArray(this.currentAircraft.rows) || rowIndex < 0 || rowIndex >= this.currentAircraft.rows.length) {
+        return;
+      }
+
+      const row = this.currentAircraft.rows[rowIndex];
+      const componentName = row && row.component ? row.component : "este componente";
+      const accepted = window.confirm(`Deseas eliminar ${componentName}?`);
+      if (!accepted) {
+        return;
+      }
+
+      this.currentAircraft.rows.splice(rowIndex, 1);
       await this.persistFleet();
     },
 
