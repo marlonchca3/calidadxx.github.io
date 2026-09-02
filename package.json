@@ -2,6 +2,7 @@
   "name": "calidadxx-dashboard",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Dashboard DIVMAAER creado con Vue.js, HTML, CSS y JavaScript.",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 8000",

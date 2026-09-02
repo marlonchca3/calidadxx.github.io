@@ -322,6 +322,8 @@
 </template>
 
 <script>
+import { hasStoredFleet, shouldApplyRemoteFleet } from "./syncRules.js";
+
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const DB_META_KEY = "sr_aero_fleet_meta_v1";
 const FIRESTORE_COLLECTION = "dashboards";
@@ -533,7 +535,7 @@ export default {
       isOwner: false,
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
-      lastSyncAt: Number(readFleetMeta().updatedAt || Date.now()),
+      lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
       localReaderUser: null,
       syncSource: "local",
       menuExpanded: true,
@@ -896,7 +898,19 @@ export default {
           return;
         }
 
-        if (localUpdatedAt > remoteUpdatedAt && !this.isOwner) {
+        const useRemoteFleet = shouldApplyRemoteFleet({
+          hasLocalData: hasStoredFleet(localStorage),
+          localUpdatedAt,
+          remoteUpdatedAt,
+          isOwner: this.isOwner
+        });
+
+        if (!useRemoteFleet && !this.isOwner) {
+          this.updateCloudStatus("Sincronizado local");
+          return;
+        }
+
+        if (!useRemoteFleet && this.isOwner) {
           this.updateCloudStatus("Sincronizado local");
           return;
         }
@@ -924,6 +938,17 @@ export default {
     async saveFleetToFirestore(force = false) {
       if ((!this.isOwner && !force) || !this.dbReady || this.isApplyingRemoteFleet) {
         return false;
+      }
+
+      const hasLocalFleet = hasStoredFleet(localStorage);
+      if (!force && !hasLocalFleet && !this.isOwner) {
+        return false;
+      }
+      if (!force && !hasLocalFleet && this.isOwner) {
+        const remoteExists = !!this.currentAircraft && this.fleet.aircrafts.length > 0 && this.fleet.aircrafts.some((aircraft) => aircraft.rows && aircraft.rows.length >= 0);
+        if (remoteExists) {
+          return false;
+        }
       }
 
       const ref = this.getFleetDocRef();
