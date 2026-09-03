@@ -945,8 +945,15 @@ export default {
         return false;
       }
       if (!force && !hasLocalFleet && this.isOwner) {
-        const remoteExists = !!this.currentAircraft && this.fleet.aircrafts.length > 0 && this.fleet.aircrafts.some((aircraft) => aircraft.rows && aircraft.rows.length >= 0);
-        if (remoteExists) {
+        try {
+          const remoteSnapshot = await this.getFleetDocRef().get();
+          if (remoteSnapshot.exists && this.getValidFleet(remoteSnapshot.data() && remoteSnapshot.data().fleet)) {
+            return false;
+          }
+        } catch (error) {
+          const detail = this.getFirebaseErrorMessage(error);
+          this.updateCloudStatus("Error lectura", true, detail);
+          this.updateLoginHint(`No se pudo comprobar Firestore. ${detail}`, true);
           return false;
         }
       }

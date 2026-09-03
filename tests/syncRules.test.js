@@ -30,3 +30,15 @@ test('no reemplaza los datos remotos si el equipo local ya guardó una versión 
     false
   );
 });
+
+test('aplica una versión remota más reciente también en el equipo del propietario', () => {
+  assert.equal(
+    shouldApplyRemoteFleet({
+      hasLocalData: true,
+      localUpdatedAt: 1700000000000,
+      remoteUpdatedAt: 1700000005000,
+      isOwner: true
+    }),
+    true
+  );
+});

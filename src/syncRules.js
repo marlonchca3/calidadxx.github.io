@@ -42,9 +42,5 @@ export function shouldApplyRemoteFleet({ hasLocalData, localUpdatedAt, remoteUpd
     return true;
   }
 
-  if (isOwner) {
-    return false;
-  }
-
   return remoteMs > localMs;
 }
