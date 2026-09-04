@@ -69,7 +69,7 @@
             </div>
             <div class="auth-box">
               <span class="auth-status">{{ authStatus }}</span>
-              <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar con Google</button>
+              <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar sesion</button>
               <button v-else class="auth-btn" type="button" @click="signOut">Cerrar sesion</button>
             </div>
           </div>
@@ -396,26 +396,6 @@
       </main>
     </div>
 
-    <div class="auth-overlay" :class="{ hidden: isAuthenticated }" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
-      <div class="auth-modal">
-        <h2 id="auth-modal-title">Iniciar sesion</h2>
-        <p class="auth-modal-sub">Accede con Google o con correo y contrasena.</p>
-        <button class="auth-modal-btn" type="button" @click="signInWithGoogle">Continuar con Google</button>
-        <div class="auth-divider">o</div>
-
-        <form class="auth-email-form" @submit.prevent="signInWithReaderEmail">
-          <label for="auth-email-input">Correo</label>
-          <input id="auth-email-input" v-model="reader.email" type="email" placeholder="Ingresa el correo" autocomplete="username">
-
-          <label for="auth-password-input">Contrasena</label>
-          <input id="auth-password-input" v-model="reader.password" type="password" placeholder="Ingresa la contrasena" autocomplete="current-password">
-
-          <button class="auth-modal-btn" type="submit">Entrar con correo</button>
-        </form>
-
-        <p class="auth-hint" :class="{ error: authHintError }">{{ authHint }}</p>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -661,7 +641,7 @@ export default {
     },
 
     isAuthenticated() {
-      return Boolean(this.activeUser);
+      return Boolean(this.localReaderUser || (this.currentUser && !this.currentUser.isAnonymous));
     },
 
     authStatus() {
@@ -921,21 +901,13 @@ export default {
     }
   },
 
-  watch: {
-    isAuthenticated(value) {
-      document.body.classList.toggle("auth-locked", !value);
-    }
-  },
-
   mounted() {
     this.initAuth();
-    document.body.classList.toggle("auth-locked", !this.isAuthenticated);
     window.addEventListener("resize", this.handleResize);
   },
 
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
-    document.body.classList.remove("auth-locked");
     if (this.firestoreUnsubscribe) {
       this.firestoreUnsubscribe();
     }
