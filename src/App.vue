@@ -86,13 +86,32 @@
                     v-for="aircraft in fleet.aircrafts"
                     :key="aircraft.id"
                     class="aircraft-card"
-                    :class="{ active: aircraft.id === fleet.selectedId }"
+                    :class="{ active: aircraft.id === fleet.selectedId, dragging: draggingAircraftId === aircraft.id }"
+                    :draggable="isOwner && editingAircraftId !== aircraft.id"
+                    @dragstart="startAircraftDrag($event, aircraft.id)"
+                    @dragover.prevent
+                    @drop.prevent="dropAircraft($event, aircraft.id)"
+                    @dragend="finishAircraftDrag"
                   >
-                    <h3>{{ aircraft.code }}</h3>
-                    <p>{{ aircraft.name }}</p>
-                    <p>Componentes: {{ aircraft.rows.length }}</p>
+                    <template v-if="editingAircraftId === aircraft.id">
+                      <input v-model.trim="editingAircraftDraft.code" class="aircraft-edit-input" type="text" maxlength="30" aria-label="Codigo de aeronave">
+                      <input v-model.trim="editingAircraftDraft.name" class="aircraft-edit-input" type="text" maxlength="80" aria-label="Nombre de aeronave">
+                      <p>Componentes: {{ aircraft.rows.length }}</p>
+                    </template>
+                    <template v-else>
+                      <h3>{{ aircraft.code }}</h3>
+                      <p>{{ aircraft.name }}</p>
+                      <p>Componentes: {{ aircraft.rows.length }}</p>
+                    </template>
                     <div class="aircraft-actions">
-                      <button class="table-btn" type="button" @click="openAircraft(aircraft.id)">Abrir</button>
+                      <template v-if="editingAircraftId === aircraft.id">
+                        <button class="table-btn" type="button" :disabled="!isOwner" @click="saveAircraftEdit(aircraft.id)">Guardar</button>
+                        <button class="table-btn" type="button" @click="cancelAircraftEdit">Cancelar</button>
+                      </template>
+                      <template v-else>
+                        <button class="table-btn" type="button" @click="openAircraft(aircraft.id)">Abrir</button>
+                        <button class="table-btn" type="button" :disabled="!isOwner" @click="startAircraftEdit(aircraft)">Editar</button>
+                      </template>
                       <button
                         v-if="canDeleteAircraft(aircraft)"
                         class="table-btn danger-btn"
@@ -190,13 +209,28 @@
 
             <article class="panel">
               <h2>Consumo de Recursos (TSO / Arranques)</h2>
-              <p class="panel-sub">Consumido vs remanente</p>
-              <div class="chart-grid">
-                <div v-for="bar in chartBars" :key="bar.key" class="bar-stack">
-                  <div class="bar" :style="{ height: `${bar.consumedHeight}px` }"></div>
-                  <div class="bar rem" :style="bar.remainingStyle"></div>
-                  <div class="bar-value">{{ formatMetric(bar.consumed) }} / {{ formatMetric(bar.remaining) }}</div>
-                  <div class="bar-label">{{ bar.label }}</div>
+              <p class="panel-sub">Comparación: consumido vs remanente por componente</p>
+              <div class="chart-legend" aria-label="Leyenda de consumo">
+                <span><i class="legend-swatch consumed"></i>Consumido</span>
+                <span><i class="legend-swatch remaining"></i>Remanente</span>
+              </div>
+              <div class="resource-chart">
+                <div v-for="bar in chartBars" :key="bar.key" class="resource-row">
+                  <div class="resource-row-head">
+                    <div class="resource-name">
+                      <span class="component-logo" :class="bar.categoryClass">{{ bar.logo }}</span>
+                      <span>{{ bar.label }}</span>
+                    </div>
+                    <strong>{{ bar.percentage }}%</strong>
+                  </div>
+                  <div class="resource-track" :aria-label="`${bar.label}: ${bar.consumed} consumido, ${bar.remaining} remanente`">
+                    <span class="resource-segment consumed" :style="{ width: `${bar.consumedWidth}%` }"></span>
+                    <span class="resource-segment remaining" :style="{ width: `${bar.remainingWidth}%` }"></span>
+                  </div>
+                  <div class="resource-values">
+                    <span>{{ formatMetric(bar.consumed) }}</span>
+                    <span>{{ formatMetric(bar.remaining) }}</span>
+                  </div>
                 </div>
               </div>
             </article>
@@ -210,6 +244,70 @@
                   <span class="date" :class="event.className">{{ event.due }}</span>
                 </li>
               </ul>
+            </article>
+          </section>
+
+          <section class="analytics-grid view">
+            <article class="panel analytics-panel">
+              <h2>Consumo de Recursos por Categoría</h2>
+              <p class="panel-sub">Distribución del consumo registrado</p>
+              <div class="donut-layout">
+                <div class="donut-chart" :style="categoryDonutStyle">
+                  <div class="donut-center">
+                    <span>Total</span>
+                    <strong>{{ formatMetric(metrics.consumedTotal) }}</strong>
+                    <small>HRS / ARR</small>
+                  </div>
+                </div>
+                <div class="chart-list">
+                  <div v-for="category in categoryChart" :key="category.key" class="chart-list-row">
+                    <span><i class="legend-swatch" :style="{ background: category.color }"></i>{{ category.label }}</span>
+                    <strong>{{ formatMetric(category.value) }} <small>{{ category.percentage }}%</small></strong>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel analytics-panel trend-panel">
+              <h2>Tendencia de Consumo (TSO)</h2>
+              <p class="panel-sub">Comparación de consumo y remanente por componente</p>
+              <div class="chart-legend trend-legend">
+                <span><i class="legend-swatch consumed"></i>Consumido</span>
+                <span><i class="legend-swatch remaining"></i>Remanente</span>
+              </div>
+              <div class="trend-chart">
+                <div class="trend-axis-label top">{{ formatMetric(trendChart.max) }}</div>
+                <div class="trend-axis-label bottom">0</div>
+                <svg viewBox="0 0 600 180" role="img" aria-label="Tendencia de consumo y remanente">
+                  <line v-for="line in trendChart.gridLines" :key="line.y" x1="38" :y1="line.y" x2="590" :y2="line.y" class="trend-grid-line"></line>
+                  <polyline :points="trendChart.consumedPoints" class="trend-line consumed-line"></polyline>
+                  <polyline :points="trendChart.remainingPoints" class="trend-line remaining-line"></polyline>
+                  <g v-for="point in trendChart.points" :key="point.key">
+                    <circle :cx="point.x" :cy="point.consumedY" r="4" class="trend-point consumed-point"></circle>
+                    <circle :cx="point.x" :cy="point.remainingY" r="4" class="trend-point remaining-point"></circle>
+                    <text :x="point.x" y="176" text-anchor="middle" class="trend-label">{{ point.label }}</text>
+                  </g>
+                </svg>
+              </div>
+            </article>
+
+            <article class="panel analytics-panel">
+              <h2>Estado de Componentes</h2>
+              <p class="panel-sub">Situación operativa actual</p>
+              <div class="donut-layout status-layout">
+                <div class="donut-chart status-donut" :style="statusDonutStyle">
+                  <div class="donut-center">
+                    <strong>{{ metrics.total }}</strong>
+                    <span>Total</span>
+                  </div>
+                </div>
+                <div class="chart-list">
+                  <div v-for="status in statusChart" :key="status.key" class="chart-list-row">
+                    <span><i class="legend-swatch" :style="{ background: status.color }"></i>{{ status.label }}</span>
+                    <strong>{{ status.value }} <small>{{ status.percentage }}%</small></strong>
+                  </div>
+                </div>
+              </div>
             </article>
           </section>
 
@@ -247,7 +345,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="(row, index) in currentRows" :key="`${currentAircraft.id}-${index}`">
-                    <td><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
+                    <td><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="persistFleet"></div></td>
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
                     <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
@@ -541,6 +639,9 @@ export default {
       menuExpanded: true,
       mobileMenuOpen: false,
       newAircraft: { code: "", name: "" },
+      editingAircraftId: "",
+      editingAircraftDraft: { code: "", name: "" },
+      draggingAircraftId: "",
       reader: { email: "", password: "" },
       menuItems: [
         { label: "Dashboard", target: "dashboard", icon: "⌂" },
@@ -706,33 +807,101 @@ export default {
     },
 
     chartBars() {
-      const rows = this.currentRows.slice(0, 5);
+      const rows = this.currentRows.slice(0, 6);
       if (rows.length === 0) {
-        return [{ key: "empty", label: "Sin datos", consumed: 0, remaining: 0, consumedHeight: 16, remainingStyle: { height: "16px" } }];
+        return [];
       }
 
-      const maxValue = Math.max(1, ...rows.map((row) => Math.max(this.rowConsumedHours(row), Math.abs(this.rowRemainingHours(row)))));
+      const maxValue = Math.max(1, ...rows.map((row) => Math.max(this.rowConsumedHours(row) + Math.max(this.rowRemainingHours(row), 0), 1)));
 
       return rows.map((row, index) => {
         const consumed = this.rowConsumedHours(row);
-        const remaining = this.rowRemainingHours(row);
-        const remainingStyle = {
-          height: `${Math.max(10, Math.round((Math.max(Math.abs(remaining), 0) / maxValue) * 120))}px`
-        };
-
-        if (remaining < 0) {
-          remainingStyle.background = "linear-gradient(180deg, #ff6a6a, #bf2626)";
-        }
+        const remaining = Math.max(this.rowRemainingHours(row), 0);
+        const total = Math.max(consumed + remaining, 1);
+        const status = this.getStatus(row);
 
         return {
           key: `${row.component}-${index}`,
-          label: row.component,
+          label: row.component || "Sin nombre",
+          logo: this.componentLogo(row),
+          categoryClass: this.categoryClass(row),
           consumed,
           remaining,
-          consumedHeight: Math.max(10, Math.round((Math.max(consumed, 0) / maxValue) * 120)),
-          remainingStyle
+          percentage: Math.round((consumed / total) * 100),
+          consumedWidth: Math.max(0, Math.min(100, (consumed / maxValue) * 100)),
+          remainingWidth: Math.max(0, Math.min(100, (remaining / maxValue) * 100)),
+          statusClass: status === "CRITICO" ? "critical" : status === "ALERTA" ? "warn" : "ok"
         };
       });
+    },
+
+    categoryChart() {
+      const categories = new Map();
+      this.currentRows.forEach((row) => {
+        const category = this.componentCategory(row);
+        const current = categories.get(category.key) || { ...category, value: 0 };
+        current.value += Math.max(this.rowConsumedHours(row), 0);
+        categories.set(category.key, current);
+      });
+
+      const total = Math.max(this.metrics.consumedTotal, 1);
+      return Array.from(categories.values())
+        .sort((a, b) => b.value - a.value)
+        .map((category) => ({
+          ...category,
+          percentage: Math.round((category.value / total) * 100)
+        }));
+    },
+
+    categoryDonutStyle() {
+      let start = 0;
+      const stops = this.categoryChart.map((category) => {
+        const end = start + (category.percentage / 100) * 360;
+        const stop = `${category.color} ${start}deg ${end}deg`;
+        start = end;
+        return stop;
+      });
+      return { background: stops.length ? `conic-gradient(${stops.join(", ")})` : "#183458" };
+    },
+
+    statusChart() {
+      const statuses = [
+        { key: "ok", label: "Operativos", value: this.metrics.ok, color: "#16b86a" },
+        { key: "alert", label: "Atención", value: this.metrics.alert, color: "#ffb100" },
+        { key: "critical", label: "Overhaul", value: this.metrics.critical, color: "#ff4f4f" }
+      ];
+      const total = Math.max(this.metrics.total, 1);
+      return statuses.map((status) => ({ ...status, percentage: Math.round((status.value / total) * 100) }));
+    },
+
+    statusDonutStyle() {
+      let start = 0;
+      const stops = this.statusChart.map((status) => {
+        const end = start + (status.percentage / 100) * 360;
+        const stop = `${status.color} ${start}deg ${end}deg`;
+        start = end;
+        return stop;
+      });
+      return { background: stops.length ? `conic-gradient(${stops.join(", ")})` : "#183458" };
+    },
+
+    trendChart() {
+      const rows = this.currentRows.slice(0, 6);
+      const values = rows.flatMap((row) => [this.rowConsumedHours(row), Math.max(this.rowRemainingHours(row), 0)]);
+      const max = Math.max(1, ...values);
+      const points = rows.map((row, index) => {
+        const x = 48 + (index * 532) / Math.max(rows.length - 1, 1);
+        const consumedY = 150 - (this.rowConsumedHours(row) / max) * 120;
+        const remainingY = 150 - (Math.max(this.rowRemainingHours(row), 0) / max) * 120;
+        return { key: `${row.component}-${index}`, x, consumedY, remainingY, label: this.shortComponentLabel(row.component) };
+      });
+      return {
+        max,
+        points,
+        consumedPoints: points.map((point) => `${point.x},${point.consumedY}`).join(" "),
+        remainingPoints: points.map((point) => `${point.x},${point.remainingY}`).join(" "),
+        gridLines: [30, 70, 110, 150].map((y) => ({ y }))
+      };
     },
 
     dueEvents() {
@@ -773,6 +942,36 @@ export default {
   },
 
   methods: {
+    componentCategory(row) {
+      const name = `${row.component || ""} ${row.series || ""}`.toLowerCase();
+      if (/motor|tv3|ai-9|apu/.test(name)) {
+        return { key: "motors", label: "Motores", color: "#176ee8", logo: "M" };
+      }
+      if (/vr-|reductor|reduct/.test(name)) {
+        return { key: "reducers", label: "Reductores", color: "#12b96b", logo: "R" };
+      }
+      if (/bomba|hidraul/.test(name)) {
+        return { key: "hydraulic", label: "Hidráulicos", color: "#f2a900", logo: "H" };
+      }
+      if (/generador|electr|ai-/.test(name)) {
+        return { key: "systems", label: "Sistemas", color: "#8b62d9", logo: "S" };
+      }
+      return { key: "other", label: "Otros", color: "#98a9c2", logo: "O" };
+    },
+
+    componentLogo(row) {
+      return this.componentCategory(row).logo;
+    },
+
+    categoryClass(row) {
+      return `category-${this.componentCategory(row).key}`;
+    },
+
+    shortComponentLabel(value) {
+      const label = String(value || "Sin datos");
+      return label.length > 12 ? `${label.slice(0, 11)}…` : label;
+    },
+
     async persistFleet() {
       const timestamp = Date.now();
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(this.fleet));
@@ -1078,6 +1277,91 @@ export default {
       this.fleet.selectedId = aircraftId;
       await this.persistFleet();
       this.navigate("dashboard");
+    },
+
+    startAircraftEdit(aircraft) {
+      if (!this.isOwner) {
+        window.alert("Solo el propietario puede editar aeronaves.");
+        return;
+      }
+      this.editingAircraftId = aircraft.id;
+      this.editingAircraftDraft = { code: aircraft.code, name: aircraft.name };
+    },
+
+    cancelAircraftEdit() {
+      this.editingAircraftId = "";
+      this.editingAircraftDraft = { code: "", name: "" };
+    },
+
+    async saveAircraftEdit(aircraftId) {
+      if (!this.isOwner) {
+        window.alert("Solo el propietario puede editar aeronaves.");
+        return;
+      }
+
+      const aircraft = this.fleet.aircrafts.find((item) => item.id === aircraftId);
+      const code = this.editingAircraftDraft.code.trim().toUpperCase();
+      const name = this.editingAircraftDraft.name.trim();
+      if (!aircraft || !code || !name) {
+        window.alert("Ingresa codigo y nombre para guardar la aeronave.");
+        return;
+      }
+
+      const duplicate = this.fleet.aircrafts.some((item) => item.id !== aircraftId && item.code.toUpperCase() === code);
+      if (duplicate) {
+        window.alert("Ese codigo ya existe.");
+        return;
+      }
+
+      aircraft.code = code;
+      aircraft.name = name;
+      this.cancelAircraftEdit();
+      const saved = await this.persistFleet();
+      if (!saved) {
+        window.alert("La aeronave se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
+      }
+    },
+
+    aircraftIndex(aircraftId) {
+      return this.fleet.aircrafts.findIndex((aircraft) => aircraft.id === aircraftId);
+    },
+
+    startAircraftDrag(event, aircraftId) {
+      if (!this.isOwner || this.editingAircraftId === aircraftId) {
+        event.preventDefault();
+        return;
+      }
+      this.draggingAircraftId = aircraftId;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", aircraftId);
+    },
+
+    async dropAircraft(event, targetAircraftId) {
+      if (!this.isOwner) {
+        return;
+      }
+
+      const draggedAircraftId = event.dataTransfer.getData("text/plain") || this.draggingAircraftId;
+      const draggedIndex = this.aircraftIndex(draggedAircraftId);
+      const targetIndex = this.aircraftIndex(targetAircraftId);
+      if (draggedIndex < 0 || targetIndex < 0 || draggedIndex === targetIndex) {
+        this.finishAircraftDrag();
+        return;
+      }
+
+      const aircrafts = [...this.fleet.aircrafts];
+      const [draggedAircraft] = aircrafts.splice(draggedIndex, 1);
+      aircrafts.splice(targetIndex, 0, draggedAircraft);
+      this.fleet.aircrafts = aircrafts;
+      this.finishAircraftDrag();
+      const saved = await this.persistFleet();
+      if (!saved) {
+        window.alert("El orden se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
+      }
+    },
+
+    finishAircraftDrag() {
+      this.draggingAircraftId = "";
     },
 
     async createAircraft() {

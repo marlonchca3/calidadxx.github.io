@@ -779,46 +779,281 @@ body.auth-locked {
   background: linear-gradient(90deg, #2bc676, #6fe59f);
 }
 
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(40px, 1fr));
-  gap: 10px;
-  align-items: end;
-  min-height: 170px;
-}
-
-.bar-stack {
-  display: grid;
-  gap: 5px;
-  justify-items: center;
-}
-
-.bar {
-  width: 25px;
-  border-radius: 8px 8px 3px 3px;
-  border: 1px solid rgba(129, 173, 242, 0.3);
-  background: linear-gradient(180deg, rgba(67, 139, 255, 0.88), rgba(20, 72, 163, 0.95));
-}
-
-.bar.rem {
-  background: linear-gradient(180deg, rgba(66, 208, 114, 0.9), rgba(18, 126, 67, 0.95));
-}
-
-.bar-label,
-.bar-value {
-  text-align: center;
-  line-height: 1.05;
-}
-
-.bar-label {
-  color: #c3d8f8;
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 4px 0 13px;
+  color: #9fb9d9;
   font-size: 11px;
 }
 
-.bar-value {
-  color: #94b7e3;
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 3px;
+}
+
+.legend-swatch.consumed,
+.resource-segment.consumed {
+  background: linear-gradient(90deg, #176ee8, #3287ff);
+}
+
+.legend-swatch.remaining,
+.resource-segment.remaining {
+  background: linear-gradient(90deg, #0ca35f, #28c978);
+}
+
+.resource-chart {
+  display: grid;
+  gap: 13px;
+}
+
+.resource-row {
+  min-width: 0;
+}
+
+.resource-row-head,
+.resource-values {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-row-head {
+  margin-bottom: 5px;
+  color: #e0edff;
+  font-size: 12px;
+}
+
+.resource-row-head strong {
+  color: #7fe3ae;
+  font-size: 11px;
+}
+
+.resource-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.component-logo {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  color: #a8c7f1;
+  background: rgba(16, 46, 87, 0.8);
+}
+
+.component-logo.category-motors { color: #5a9bff; }
+.component-logo.category-reducers { color: #44d88f; }
+.component-logo.category-hydraulic { color: #ffd166; }
+.component-logo.category-systems { color: #c09dff; }
+.component-logo.category-other { color: #b9c6d8; }
+
+.table-component {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.resource-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.status-dot.warn { background: var(--warn); }
+.status-dot.critical { background: var(--danger); }
+
+.resource-track {
+  display: flex;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(125, 169, 237, 0.16);
+  border-radius: 4px;
+  background: rgba(18, 48, 83, 0.76);
+}
+
+.resource-segment {
+  display: block;
+  min-width: 0;
+  transition: width 0.35s ease;
+}
+
+.resource-values {
+  margin-top: 3px;
+  color: #85a8d2;
   font-size: 10px;
 }
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(340px, 1.3fr) minmax(250px, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.analytics-panel {
+  min-width: 0;
+  min-height: 250px;
+}
+
+.donut-layout {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 155px;
+}
+
+.donut-chart {
+  width: 132px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  position: relative;
+}
+
+.donut-chart::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  background: #071a38;
+  box-shadow: inset 0 0 16px rgba(1, 8, 20, 0.58);
+}
+
+.donut-center {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+}
+
+.donut-center span,
+.donut-center small {
+  color: #8fa9ca;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.donut-center strong {
+  color: #eef6ff;
+  font-family: Rajdhani, sans-serif;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.chart-list {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: #c9dbf5;
+  font-size: 11px;
+}
+
+.chart-list-row > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chart-list-row > span:last-child {
+  white-space: nowrap;
+}
+
+.chart-list-row strong {
+  color: #e7f1ff;
+  white-space: nowrap;
+}
+
+.chart-list-row strong small {
+  color: #91abc9;
+  font-weight: 500;
+}
+
+.trend-legend {
+  justify-content: flex-end;
+  margin-bottom: 3px;
+}
+
+.trend-chart {
+  position: relative;
+  height: 155px;
+  padding-left: 14px;
+}
+
+.trend-chart svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.trend-grid-line {
+  stroke: rgba(125, 169, 237, 0.14);
+  stroke-width: 1;
+}
+
+.trend-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.consumed-line { stroke: #2c82ff; }
+.remaining-line { stroke: #20bf72; }
+.trend-point { stroke: #071a38; stroke-width: 2; }
+.consumed-point { fill: #2c82ff; }
+.remaining-point { fill: #20bf72; }
+
+.trend-label {
+  fill: #86a5cc;
+  font-size: 9px;
+}
+
+.trend-axis-label {
+  position: absolute;
+  left: 0;
+  color: #7895bb;
+  font-size: 9px;
+}
+
+.trend-axis-label.top { top: 5px; }
+.trend-axis-label.bottom { bottom: 15px; }
 
 .events li {
   display: grid;
@@ -989,6 +1224,33 @@ th {
   padding: 12px;
   display: grid;
   gap: 8px;
+  cursor: grab;
+  transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.aircraft-card:active {
+  cursor: grabbing;
+}
+
+.aircraft-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+.aircraft-edit-input {
+  width: 100%;
+  border: 1px solid rgba(104, 165, 255, 0.8);
+  border-radius: 8px;
+  background: rgba(5, 18, 40, 0.82);
+  color: #e7f1ff;
+  padding: 7px 9px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.aircraft-edit-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.24);
 }
 
 .aircraft-card h3 {
@@ -1368,14 +1630,25 @@ footer {
   }
 
   .main-grid,
+  .analytics-grid,
   .stats-row,
   .aircrafts-layout {
     grid-template-columns: 1fr;
   }
 
+  .trend-panel { grid-column: auto; }
+
   .plane-title {
     font-size: 32px;
     overflow-wrap: anywhere;
+  }
+
+  .donut-layout {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+
+  .donut-chart {
+    width: 120px;
   }
 
   .meta-list li,
