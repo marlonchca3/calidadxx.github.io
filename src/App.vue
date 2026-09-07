@@ -1,6 +1,42 @@
 <template>
   <div class="app-shell">
-    <div class="layout">
+    <section v-if="!isAuthenticated" class="login-screen">
+      <form class="login-card" @submit.prevent="signInWithEmail">
+        <div class="login-brand">
+          <p>DIVMAAER</p>
+          <h1>Control de Calidad</h1>
+        </div>
+
+        <label for="login-email">Correo</label>
+        <input
+          id="login-email"
+          v-model.trim="loginEmail"
+          class="login-input"
+          type="email"
+          autocomplete="username"
+          :disabled="authBusy"
+        >
+
+        <label for="login-password">Contrasena</label>
+        <input
+          id="login-password"
+          v-model="loginPassword"
+          class="login-input"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Contrasena"
+          :disabled="authBusy"
+        >
+
+        <button class="login-btn" type="submit" :disabled="authBusy || !authReady">
+          {{ authBusy ? "Ingresando..." : "Ingresar" }}
+        </button>
+
+        <p class="login-hint" :class="{ error: authHintError }">{{ authHint }}</p>
+      </form>
+    </section>
+
+    <div v-else class="layout">
       <aside class="sidebar" :class="{ open: mobileMenuOpen }">
         <div class="brand">
           <h2 class="brand-title">DIVMAAER</h2>
@@ -69,8 +105,7 @@
             </div>
             <div class="auth-box" :title="authHint">
               <span class="auth-status">{{ authStatus }}</span>
-              <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar sesion</button>
-              <button v-else class="auth-btn" type="button" @click="signOut">Cerrar sesion</button>
+              <button class="auth-btn" type="button" @click="signOut">Cerrar sesion</button>
             </div>
           </div>
         </header>
@@ -408,7 +443,7 @@ const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
 const TODAY = new Date();
 TODAY.setHours(0, 0, 0, 0);
-const OWNER_EMAIL = "marlonchca3@gmail.com";
+const OWNER_EMAIL = "calidad@divmaaer.com";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDRAZZ4VafNNIi3G9_USyARksFqgKYE5Fo",
@@ -592,7 +627,8 @@ export default {
     return {
       activeView: "dashboard",
       activeMenuLabel: "Dashboard",
-      authHint: "Inicia sesion con Firebase para consultar la informacion.",
+      authBusy: false,
+      authHint: "Inicia sesion con correo y contrasena para consultar la informacion.",
       authHintError: false,
       authReady: false,
       cloudErrorMessage: "",
@@ -606,6 +642,8 @@ export default {
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
+      loginEmail: OWNER_EMAIL,
+      loginPassword: "",
       syncSource: "local",
       menuExpanded: true,
       mobileMenuOpen: false,
@@ -1109,7 +1147,7 @@ export default {
       }
       if (!this.currentUser || this.currentUser.isAnonymous) {
         this.updateCloudStatus("Requiere login", true);
-        this.updateLoginHint("Inicia sesion con una cuenta verificada para guardar.", true);
+        this.updateLoginHint("Inicia sesion con el correo autorizado para guardar.", true);
         return false;
       }
       if (!this.isOwner && !force) {
@@ -1461,19 +1499,71 @@ export default {
       }
     },
 
-    async signInWithGoogle() {
+    getAuthErrorMessage(error) {
+      const code = error && error.code ? error.code : "";
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+        return "Correo o contrasena incorrectos.";
+      }
+      if (code === "auth/too-many-requests") {
+        return "Demasiados intentos. Espera un momento y vuelve a probar.";
+      }
+      if (code === "auth/operation-not-allowed") {
+        return "Activa Email/Password en Firebase Authentication.";
+      }
+      return "No se pudo iniciar sesion con correo.";
+    },
+
+    async createAllowedUser() {
+      try {
+        await window.firebase.auth().createUserWithEmailAndPassword(this.loginEmail, this.loginPassword);
+        this.loginPassword = "";
+        this.updateLoginHint("Cuenta creada e ingreso correcto.");
+        return true;
+      } catch (error) {
+        if (error && error.code === "auth/email-already-in-use") {
+          this.updateLoginHint("Correo o contrasena incorrectos.", true);
+          return false;
+        }
+        throw error;
+      }
+    },
+
+    async signInWithEmail() {
       if (!this.authReady) {
         this.updateLoginHint("Firebase Auth no esta disponible.", true);
         return;
       }
+      if (!this.loginEmail || !this.loginPassword) {
+        this.updateLoginHint("Ingresa correo y contrasena.", true);
+        return;
+      }
+      if (this.loginEmail.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
+        this.updateLoginHint(`Solo esta autorizado ${OWNER_EMAIL}.`, true);
+        return;
+      }
 
       try {
-        const provider = new window.firebase.auth.GoogleAuthProvider();
-        await window.firebase.auth().signInWithPopup(provider);
-        this.updateLoginHint("Ingreso correcto con Google.");
+        this.authBusy = true;
+        await window.firebase.auth().signInWithEmailAndPassword(this.loginEmail, this.loginPassword);
+        this.loginPassword = "";
+        this.updateLoginHint("Ingreso correcto con correo.");
       } catch (error) {
-        console.error("Google sign-in error:", error);
-        this.updateLoginHint("No se pudo iniciar sesion con Google.", true);
+        if (error && (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential")) {
+          try {
+            const created = await this.createAllowedUser();
+            if (created) {
+              return;
+            }
+          } catch (createError) {
+            console.error("Email sign-up error:", createError);
+            this.updateLoginHint(this.getAuthErrorMessage(createError), true);
+            return;
+          }
+        }
+        console.error("Email sign-in error:", error);
+        this.updateLoginHint(this.getAuthErrorMessage(error), true);
+      } finally {
+        this.authBusy = false;
       }
     },
 
@@ -1527,7 +1617,7 @@ export default {
             this.firestoreUnsubscribe = null;
           }
           this.updateCloudStatus("Requiere login");
-          this.updateLoginHint("Inicia sesion con Firebase para consultar la informacion.");
+          this.updateLoginHint("Inicia sesion con correo y contrasena para consultar la informacion.");
           return;
         }
 
@@ -1539,7 +1629,7 @@ export default {
         } catch (error) {
           console.warn("No se pudieron leer los claims de Auth:", error);
         }
-        this.isOwner = role === "editor" || (email === OWNER_EMAIL.toLowerCase() && user.emailVerified === true);
+        this.isOwner = role === "editor" || email === OWNER_EMAIL.toLowerCase();
 
         if (user && !this.isOwner) {
           this.updateLoginHint("Ingreso autenticado en modo solo lectura.");
