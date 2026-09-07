@@ -2,11 +2,34 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function isEditor() {
+      return isAuthenticated()
+        && (request.auth.token.role == 'editor'
+          || request.auth.token.email == 'marlonchca3@gmail.com');
+    }
+
+    function isValidDashboard() {
+      return request.resource.data.keys().hasOnly(['fleet', 'updatedAt', 'updatedBy', 'updatedEpoch'])
+        && request.resource.data.fleet is map
+        && request.resource.data.fleet.selectedId is string
+        && request.resource.data.fleet.aircrafts is list
+        && request.resource.data.fleet.aircrafts.size() <= 100
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.updatedBy is string
+        && request.resource.data.updatedBy.size() <= 320
+        && request.resource.data.updatedEpoch is int;
+    }
+
     match /dashboards/main {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null
-        && request.auth.token.email == 'marlonchca3@gmail.com'
-        && request.auth.token.email_verified == true;
+      allow read: if isAuthenticated();
+      allow create, update: if isEditor() && isValidDashboard();
+      allow delete: if false;
     }
   }
 }

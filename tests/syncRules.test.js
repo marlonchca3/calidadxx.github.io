@@ -42,3 +42,29 @@ test('aplica una versión remota más reciente también en el equipo del propiet
     true
   );
 });
+
+test('no aplica una versión remota con marca inválida o igual a la local', () => {
+  assert.equal(
+    shouldApplyRemoteFleet({
+      hasLocalData: true,
+      localUpdatedAt: 1700000000000,
+      remoteUpdatedAt: 'no-es-una-fecha'
+    }),
+    false
+  );
+  assert.equal(
+    shouldApplyRemoteFleet({
+      hasLocalData: true,
+      localUpdatedAt: 1700000000000,
+      remoteUpdatedAt: 1700000000000
+    }),
+    false
+  );
+});
+
+test('ignora metadatos locales corruptos sin bloquear la carga remota', () => {
+  const storage = { getItem: () => '{no-json' };
+
+  assert.equal(hasStoredFleet(storage), false);
+  assert.equal(getLocalFleetUpdatedAt(storage), 0);
+});

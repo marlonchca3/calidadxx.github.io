@@ -58,7 +58,7 @@
 
           <div class="top-actions">
             <div class="chip aircraft-chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
-            <div class="chip date-chip">01/07/2026 <span>◷</span></div>
+            <div class="chip date-chip">{{ todayLabel }} <span>◷</span></div>
             <div class="chip firebase-chip" :class="{ 'sync-error': cloudStatusError }" :title="cloudErrorMessage || cloudStatus">
               <span class="sync-dot"></span>
               <span>Firebase {{ cloudStatusText }}</span>
@@ -391,7 +391,7 @@
         </template>
 
         <footer>
-          2026 Sistema de Gestion de Recursos Aeronauticos · {{ currentAircraft ? currentAircraft.code : "PNP-501" }} · Todos los derechos reservados
+          {{ new Date().getFullYear() }} Sistema de Gestion de Recursos Aeronauticos · {{ currentAircraft ? currentAircraft.code : "PNP-501" }} · Todos los derechos reservados
         </footer>
       </main>
     </div>
@@ -406,10 +406,9 @@ const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const DB_META_KEY = "sr_aero_fleet_meta_v1";
 const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
-const TODAY = new Date("2026-07-01T00:00:00");
+const TODAY = new Date();
+TODAY.setHours(0, 0, 0, 0);
 const OWNER_EMAIL = "marlonchca3@gmail.com";
-const READER_EMAIL_HASH = "cf30f164237b2f843b303d131f806667d66f53df7f853704ad788c586255158b";
-const READER_PASSWORD_HASH = "4e300f7119639f74678d06e4c4b06d5e0d4f38b0220f4bbac3cbba8a3f24995c";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDRAZZ4VafNNIi3G9_USyARksFqgKYE5Fo",
@@ -586,13 +585,6 @@ function loadScript(src) {
   });
 }
 
-async function sha256(value) {
-  const text = String(value || "");
-  const encoded = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 export default {
   name: "App",
 
@@ -600,7 +592,7 @@ export default {
     return {
       activeView: "dashboard",
       activeMenuLabel: "Dashboard",
-      authHint: "El acceso por correo es solo lectura.",
+      authHint: "Inicia sesion con Firebase para consultar la informacion.",
       authHintError: false,
       authReady: false,
       cloudErrorMessage: "",
@@ -614,7 +606,6 @@ export default {
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
-      localReaderUser: null,
       syncSource: "local",
       menuExpanded: true,
       mobileMenuOpen: false,
@@ -622,7 +613,6 @@ export default {
       editingAircraftId: "",
       editingAircraftDraft: { code: "", name: "" },
       draggingAircraftId: "",
-      reader: { email: "", password: "" },
       menuItems: [
         { label: "Dashboard", target: "dashboard", icon: "⌂" },
         { label: "Aeronaves", target: "aeronaves", icon: "✈" },
@@ -637,11 +627,15 @@ export default {
 
   computed: {
     activeUser() {
-      return this.currentUser || this.localReaderUser;
+      return this.currentUser;
     },
 
     isAuthenticated() {
-      return Boolean(this.localReaderUser || (this.currentUser && !this.currentUser.isAnonymous));
+      return Boolean(this.currentUser && !this.currentUser.isAnonymous);
+    },
+
+    todayLabel() {
+      return formatEsDate(TODAY);
     },
 
     authStatus() {
@@ -958,7 +952,7 @@ export default {
 
     getRemoteUpdatedAt(data) {
       if (!data || !data.updatedAt) {
-        return 0;
+        return Number(data && data.updatedEpoch ? data.updatedEpoch : 0);
       }
       if (typeof data.updatedAt.toMillis === "function") {
         return data.updatedAt.toMillis();
@@ -967,7 +961,7 @@ export default {
         return Number(data.updatedAt.seconds) * 1000;
       }
       const parsed = new Date(data.updatedAt).getTime();
-      return Number.isFinite(parsed) ? parsed : 0;
+      return Number.isFinite(parsed) ? parsed : Number(data.updatedEpoch || 0);
     },
 
     rowAssignedHours(row) {
@@ -1082,7 +1076,8 @@ export default {
         }
 
         if (!useRemoteFleet && this.isOwner) {
-          this.updateCloudStatus("Sincronizado local");
+          this.updateCloudStatus("Actualizando remoto");
+          await this.saveFleetToFirestore();
           return;
         }
 
@@ -1163,24 +1158,6 @@ export default {
     updateLoginHint(message, isError = false) {
       this.authHint = message;
       this.authHintError = isError;
-    },
-
-    async ensureAnonymousFirebaseSession() {
-      if (!this.authReady || !window.firebase || !window.firebase.auth) {
-        return false;
-      }
-      if (window.firebase.auth().currentUser) {
-        return true;
-      }
-
-      try {
-        await window.firebase.auth().signInAnonymously();
-        return true;
-      } catch (error) {
-        console.error("Anonymous sign-in error:", error);
-        this.updateCloudStatus("Sin lectura", true, this.getFirebaseErrorMessage(error));
-        return false;
-      }
     },
 
     formatMetric(value) {
@@ -1412,7 +1389,7 @@ export default {
         component: "Nuevo componente",
         series: "",
         workshop: "",
-        overhaul: "01/07/2026",
+        overhaul: formatEsDate(TODAY),
         assigned: "0",
         consumed: "0",
         remaining: "0",
@@ -1422,7 +1399,7 @@ export default {
         consumedTboYears: "0",
         remainingTboHours: "0",
         remainingTboYears: "0",
-        due: "01/07/2027"
+        due: calculateDueDate(formatEsDate(TODAY), "1")
       }));
       await this.persistFleet();
     },
@@ -1472,7 +1449,7 @@ export default {
 
     async signInWithGoogle() {
       if (!this.authReady) {
-        this.updateLoginHint("Google no esta disponible. Usa correo o configura Firebase.", true);
+        this.updateLoginHint("Firebase Auth no esta disponible.", true);
         return;
       }
 
@@ -1486,35 +1463,7 @@ export default {
       }
     },
 
-    async signInWithReaderEmail() {
-      const normalized = String(this.reader.email || "").trim().toLowerCase();
-      const rawPassword = String(this.reader.password || "");
-      const emailHash = await sha256(normalized);
-      const passwordHash = await sha256(rawPassword);
-
-      if (emailHash !== READER_EMAIL_HASH || passwordHash !== READER_PASSWORD_HASH) {
-        this.updateLoginHint("Credenciales incorrectas para acceso por correo.", true);
-        return;
-      }
-
-      this.localReaderUser = { email: "usuario-correo", provider: "email-reader" };
-      this.currentUser = null;
-      this.isOwner = false;
-      this.reader.password = "";
-      this.updateLoginHint("Ingreso correcto. Modo solo lectura.");
-      await this.ensureAnonymousFirebaseSession();
-      this.subscribeFleetFromFirestore();
-    },
-
     async signOut() {
-      if (this.localReaderUser) {
-        this.localReaderUser = null;
-        this.currentUser = null;
-        this.isOwner = false;
-        this.updateLoginHint("El acceso por correo es solo lectura.");
-        return;
-      }
-
       if (!this.authReady) {
         this.currentUser = null;
         this.isOwner = false;
@@ -1526,7 +1475,7 @@ export default {
 
     async initAuth() {
       if (!isFirebaseConfigReady()) {
-        this.updateLoginHint("El acceso por correo es solo lectura.");
+        this.updateLoginHint("Configura Firebase Auth para iniciar sesion.", true);
         return;
       }
 
@@ -1536,13 +1485,13 @@ export default {
         await loadScript("https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js");
       } catch (error) {
         console.error("Firebase SDK load error:", error);
-        this.updateLoginHint("Google no esta disponible. Usa el acceso por correo.", true);
+        this.updateLoginHint("Firebase Auth no esta disponible.", true);
         this.updateCloudStatus("Sin conexion", true, this.getFirebaseErrorMessage(error));
         return;
       }
 
       if (!window.firebase || !window.firebase.firestore) {
-        this.updateLoginHint("Google no esta disponible. Usa el acceso por correo.", true);
+        this.updateLoginHint("Firebase Auth no esta disponible.", true);
         this.updateCloudStatus("Sin Firebase", true);
         return;
       }
@@ -1554,25 +1503,30 @@ export default {
       this.authReady = true;
       this.dbReady = true;
 
-      await this.ensureAnonymousFirebaseSession();
-
       window.firebase.auth().onAuthStateChanged(async (user) => {
         this.currentUser = user;
-        if (user && !user.isAnonymous) {
-          this.localReaderUser = null;
+        this.isOwner = false;
+
+        if (!user || user.isAnonymous) {
+          if (this.firestoreUnsubscribe) {
+            this.firestoreUnsubscribe();
+            this.firestoreUnsubscribe = null;
+          }
+          this.updateCloudStatus("Requiere login");
+          this.updateLoginHint("Inicia sesion con Firebase para consultar la informacion.");
+          return;
         }
 
-        const email = (user && user.email ? user.email : "").toLowerCase();
-        this.isOwner = email === OWNER_EMAIL.toLowerCase();
+        const email = (user.email || "").toLowerCase();
+        const tokenResult = await user.getIdTokenResult();
+        const role = tokenResult.claims.role;
+        this.isOwner = role === "editor" || (email === OWNER_EMAIL.toLowerCase() && user.emailVerified);
 
         if (user && !this.isOwner) {
-          this.updateLoginHint("Ingreso con Google en modo solo lectura.");
+          this.updateLoginHint("Ingreso autenticado en modo solo lectura.");
         }
         if (user && this.isOwner) {
-          this.updateLoginHint("Ingreso con Google en modo editor.");
-        }
-        if (!user && !this.localReaderUser) {
-          this.updateLoginHint("El acceso por correo es solo lectura.");
+          this.updateLoginHint("Ingreso autenticado en modo editor.");
         }
 
         this.subscribeFleetFromFirestore();
