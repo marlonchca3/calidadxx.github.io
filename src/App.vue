@@ -67,7 +67,7 @@
               <span class="sync-source-dot" :class="{ remote: syncSource === 'remote' }"></span>
               <span>Últ. sync: {{ lastSyncLabel }}</span>
             </div>
-            <div class="auth-box">
+            <div class="auth-box" :title="authHint">
               <span class="auth-status">{{ authStatus }}</span>
               <button v-if="!isAuthenticated" class="auth-btn" type="button" @click="signInWithGoogle">Iniciar sesion</button>
               <button v-else class="auth-btn" type="button" @click="signOut">Cerrar sesion</button>
@@ -1102,7 +1102,21 @@ export default {
     },
 
     async saveFleetToFirestore(force = false) {
-      if ((!this.isOwner && !force) || !this.dbReady || this.isApplyingRemoteFleet) {
+      if (!this.dbReady) {
+        this.updateCloudStatus("Sin Firebase", true);
+        this.updateLoginHint("Firestore aun no esta listo.", true);
+        return false;
+      }
+      if (!this.currentUser || this.currentUser.isAnonymous) {
+        this.updateCloudStatus("Requiere login", true);
+        this.updateLoginHint("Inicia sesion con una cuenta verificada para guardar.", true);
+        return false;
+      }
+      if (!this.isOwner && !force) {
+        this.updateLoginHint("Tu cuenta tiene permisos de solo lectura.", true);
+        return false;
+      }
+      if (this.isApplyingRemoteFleet) {
         return false;
       }
 
@@ -1518,9 +1532,14 @@ export default {
         }
 
         const email = (user.email || "").toLowerCase();
-        const tokenResult = await user.getIdTokenResult();
-        const role = tokenResult.claims.role;
-        this.isOwner = role === "editor" || (email === OWNER_EMAIL.toLowerCase() && user.emailVerified);
+        let role = "";
+        try {
+          const tokenResult = await user.getIdTokenResult();
+          role = tokenResult.claims.role || "";
+        } catch (error) {
+          console.warn("No se pudieron leer los claims de Auth:", error);
+        }
+        this.isOwner = role === "editor" || (email === OWNER_EMAIL.toLowerCase() && user.emailVerified === true);
 
         if (user && !this.isOwner) {
           this.updateLoginHint("Ingreso autenticado en modo solo lectura.");
