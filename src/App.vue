@@ -29,8 +29,17 @@
           :disabled="authBusy"
         >
 
-        <button class="login-btn" type="submit" :disabled="authBusy || !authReady">
-          {{ authBusy ? "Ingresando..." : "Ingresar" }}
+        <div class="login-actions">
+          <button class="login-btn primary" type="submit" :disabled="authBusy || !authReady">
+            {{ authBusy ? "Procesando..." : "Ingresar" }}
+          </button>
+          <button class="login-btn" type="button" :disabled="authBusy || !authReady" @click="createEmailUser">
+            Crear cuenta
+          </button>
+        </div>
+
+        <button class="login-link-btn" type="button" :disabled="authBusy || !authReady" @click="sendPasswordReset">
+          Restablecer contrasena
         </button>
 
         <p class="login-hint" :class="{ error: authHintError }">{{ authHint }}</p>
@@ -445,6 +454,11 @@ const FIRESTORE_DOCUMENT = "main";
 const TODAY = new Date();
 TODAY.setHours(0, 0, 0, 0);
 const OWNER_EMAIL = "calidad@divmaaer.com";
+const EDITOR_EMAILS = [
+  OWNER_EMAIL,
+  "marlonchca3@gmail.com",
+  "gato0247@gmail.com"
+];
 
 const firebaseConfig = {
   apiKey: "AIzaSyDRAZZ4VafNNIi3G9_USyARksFqgKYE5Fo",
@@ -606,6 +620,10 @@ function isFirebaseConfigReady() {
   return Object.values(firebaseConfig).every((value) => value && !String(value).startsWith("REEMPLAZAR_"));
 }
 
+function isEditorEmail(email) {
+  return EDITOR_EMAILS.includes(String(email || "").toLowerCase());
+}
+
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
@@ -629,7 +647,7 @@ export default {
       activeView: "dashboard",
       activeMenuLabel: "Dashboard",
       authBusy: false,
-      authHint: "Ingresa con tu correo. Si es tu primera vez, se creara tu cuenta.",
+      authHint: "Usa Ingresar si ya tienes cuenta, o Crear cuenta si es tu primera vez.",
       authHintError: false,
       authReady: false,
       cloudErrorMessage: "",
@@ -1514,21 +1532,59 @@ export default {
       if (code === "auth/weak-password") {
         return "La contrasena debe tener al menos 6 caracteres.";
       }
+      if (code === "auth/email-already-in-use") {
+        return "Ese correo ya existe. Usa Ingresar o restablece la contrasena.";
+      }
+      if (code === "auth/invalid-email") {
+        return "Ingresa un correo valido.";
+      }
       return "No se pudo iniciar sesion con correo.";
     },
 
     async createEmailUser() {
+      if (!this.authReady) {
+        this.updateLoginHint("Firebase Auth no esta disponible.", true);
+        return false;
+      }
+      if (!this.loginEmail || !this.loginPassword) {
+        this.updateLoginHint("Ingresa correo y contrasena para crear la cuenta.", true);
+        return false;
+      }
+
       try {
+        this.authBusy = true;
         await window.firebase.auth().createUserWithEmailAndPassword(this.loginEmail, this.loginPassword);
         this.loginPassword = "";
         this.updateLoginHint("Cuenta creada e ingreso correcto.");
         return true;
       } catch (error) {
-        if (error && error.code === "auth/email-already-in-use") {
-          this.updateLoginHint("Correo o contrasena incorrectos.", true);
-          return false;
-        }
-        throw error;
+        console.error("Email sign-up error:", error);
+        this.updateLoginHint(this.getAuthErrorMessage(error), true);
+        return false;
+      } finally {
+        this.authBusy = false;
+      }
+    },
+
+    async sendPasswordReset() {
+      if (!this.authReady) {
+        this.updateLoginHint("Firebase Auth no esta disponible.", true);
+        return;
+      }
+      if (!this.loginEmail) {
+        this.updateLoginHint("Escribe tu correo para enviar el restablecimiento.", true);
+        return;
+      }
+
+      try {
+        this.authBusy = true;
+        await window.firebase.auth().sendPasswordResetEmail(this.loginEmail);
+        this.updateLoginHint("Te enviamos un correo para restablecer la contrasena.");
+      } catch (error) {
+        console.error("Password reset error:", error);
+        this.updateLoginHint(this.getAuthErrorMessage(error), true);
+      } finally {
+        this.authBusy = false;
       }
     },
 
@@ -1548,18 +1604,6 @@ export default {
         this.loginPassword = "";
         this.updateLoginHint("Ingreso correcto con correo.");
       } catch (error) {
-        if (error && (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential")) {
-          try {
-            const created = await this.createEmailUser();
-            if (created) {
-              return;
-            }
-          } catch (createError) {
-            console.error("Email sign-up error:", createError);
-            this.updateLoginHint(this.getAuthErrorMessage(createError), true);
-            return;
-          }
-        }
         console.error("Email sign-in error:", error);
         this.updateLoginHint(this.getAuthErrorMessage(error), true);
       } finally {
@@ -1617,7 +1661,7 @@ export default {
             this.firestoreUnsubscribe = null;
           }
           this.updateCloudStatus("Requiere login");
-          this.updateLoginHint("Ingresa con tu correo. Si es tu primera vez, se creara tu cuenta.");
+          this.updateLoginHint("Usa Ingresar si ya tienes cuenta, o Crear cuenta si es tu primera vez.");
           return;
         }
 
@@ -1629,7 +1673,7 @@ export default {
         } catch (error) {
           console.warn("No se pudieron leer los claims de Auth:", error);
         }
-        this.isOwner = role === "editor" || email === OWNER_EMAIL.toLowerCase();
+        this.isOwner = role === "editor" || isEditorEmail(email);
 
         if (user && !this.isOwner) {
           this.updateLoginHint("Ingreso autenticado en modo solo lectura.");
