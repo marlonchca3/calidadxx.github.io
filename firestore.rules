@@ -14,7 +14,8 @@ service cloud.firestore {
           || request.auth.token.email in [
             'calidad@divmaaer.com',
             'marlonchca3@gmail.com',
-            'gato0247@gmail.com'
+            'gato0247@gmail.com',
+            'tatianamhl250197@gmail.com'
           ]);
     }
 

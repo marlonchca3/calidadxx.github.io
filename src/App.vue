@@ -457,7 +457,8 @@ const OWNER_EMAIL = "calidad@divmaaer.com";
 const EDITOR_EMAILS = [
   OWNER_EMAIL,
   "marlonchca3@gmail.com",
-  "gato0247@gmail.com"
+  "gato0247@gmail.com",
+  "tatianamhl250197@gmail.com"
 ];
 
 const firebaseConfig = {
