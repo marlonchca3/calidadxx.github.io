@@ -4,12 +4,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isAuthenticated() {
       return request.auth != null
-        && request.auth.token.email == 'calidad@divmaaer.com'
+        && request.auth.token.email is string
         && request.auth.token.firebase.sign_in_provider == 'password';
     }
 
     function isEditor() {
-      return isAuthenticated();
+      return isAuthenticated()
+        && (request.auth.token.role == 'editor'
+          || request.auth.token.email == 'calidad@divmaaer.com');
     }
 
     function isValidDashboard() {

@@ -14,6 +14,7 @@
           class="login-input"
           type="email"
           autocomplete="username"
+          placeholder="correo@ejemplo.com"
           :disabled="authBusy"
         >
 
@@ -628,7 +629,7 @@ export default {
       activeView: "dashboard",
       activeMenuLabel: "Dashboard",
       authBusy: false,
-      authHint: "Inicia sesion con correo y contrasena para consultar la informacion.",
+      authHint: "Ingresa con tu correo. Si es tu primera vez, se creara tu cuenta.",
       authHintError: false,
       authReady: false,
       cloudErrorMessage: "",
@@ -642,7 +643,7 @@ export default {
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
-      loginEmail: OWNER_EMAIL,
+      loginEmail: "",
       loginPassword: "",
       syncSource: "local",
       menuExpanded: true,
@@ -1510,10 +1511,13 @@ export default {
       if (code === "auth/operation-not-allowed") {
         return "Activa Email/Password en Firebase Authentication.";
       }
+      if (code === "auth/weak-password") {
+        return "La contrasena debe tener al menos 6 caracteres.";
+      }
       return "No se pudo iniciar sesion con correo.";
     },
 
-    async createAllowedUser() {
+    async createEmailUser() {
       try {
         await window.firebase.auth().createUserWithEmailAndPassword(this.loginEmail, this.loginPassword);
         this.loginPassword = "";
@@ -1537,10 +1541,6 @@ export default {
         this.updateLoginHint("Ingresa correo y contrasena.", true);
         return;
       }
-      if (this.loginEmail.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
-        this.updateLoginHint(`Solo esta autorizado ${OWNER_EMAIL}.`, true);
-        return;
-      }
 
       try {
         this.authBusy = true;
@@ -1550,7 +1550,7 @@ export default {
       } catch (error) {
         if (error && (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential")) {
           try {
-            const created = await this.createAllowedUser();
+            const created = await this.createEmailUser();
             if (created) {
               return;
             }
@@ -1617,7 +1617,7 @@ export default {
             this.firestoreUnsubscribe = null;
           }
           this.updateCloudStatus("Requiere login");
-          this.updateLoginHint("Inicia sesion con correo y contrasena para consultar la informacion.");
+          this.updateLoginHint("Ingresa con tu correo. Si es tu primera vez, se creara tu cuenta.");
           return;
         }
 
