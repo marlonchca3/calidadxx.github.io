@@ -657,6 +657,7 @@ export default {
       dbReady: false,
       fleet: loadFleet(),
       firestoreUnsubscribe: null,
+      hasLoadedRemoteFleet: false,
       isOwner: false,
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
@@ -1091,6 +1092,49 @@ export default {
       };
     },
 
+    async loadFleetFromFirestore() {
+      const ref = this.getFleetDocRef();
+      if (!ref) {
+        return;
+      }
+
+      try {
+        const snapshot = await ref.get({ source: "server" });
+        if (!snapshot.exists) {
+          this.updateCloudStatus("Inicial");
+          if (this.isOwner) {
+            await this.saveFleetToFirestore(true);
+          }
+          return;
+        }
+
+        const data = snapshot.data() || {};
+        const remoteFleet = this.getValidFleet(data.fleet);
+        if (!remoteFleet) {
+          this.updateCloudStatus("Datos invalidos", true);
+          return;
+        }
+
+        const remoteUpdatedAt = this.getRemoteUpdatedAt(data) || Date.now();
+        this.hasLoadedRemoteFleet = true;
+        this.isApplyingRemoteFleet = true;
+        this.fleet = remoteFleet;
+        localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(remoteFleet));
+        writeFleetMeta(remoteUpdatedAt);
+        this.lastSyncAt = remoteUpdatedAt;
+        this.syncSource = "remote";
+        this.$nextTick(() => {
+          this.isApplyingRemoteFleet = false;
+        });
+        this.updateCloudStatus("Sincronizado");
+      } catch (error) {
+        const detail = this.getFirebaseErrorMessage(error);
+        console.error("Firestore initial read error:", error);
+        this.updateCloudStatus("Error lectura", true, detail);
+        this.updateLoginHint(`No se pudo cargar la flota desde Firestore. ${detail}`, true);
+      }
+    },
+
     subscribeFleetFromFirestore() {
       const ref = this.getFleetDocRef();
       if (!ref) {
@@ -1101,9 +1145,10 @@ export default {
         this.firestoreUnsubscribe();
       }
 
+      this.hasLoadedRemoteFleet = false;
       this.updateCloudStatus("Conectando");
       this.firestoreUnsubscribe = ref.onSnapshot(async (snapshot) => {
-        if (this.isSavingToFirestore && !snapshot.metadata.hasPendingWrites) {
+        if (snapshot.metadata.hasPendingWrites) {
           return;
         }
 
@@ -1125,13 +1170,24 @@ export default {
           return;
         }
 
+        if (!this.hasLoadedRemoteFleet) {
+          this.hasLoadedRemoteFleet = true;
+          this.isApplyingRemoteFleet = true;
+          this.fleet = remoteFleet;
+          localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(remoteFleet));
+          const appliedTimestamp = remoteUpdatedAt || Date.now();
+          writeFleetMeta(appliedTimestamp);
+          this.lastSyncAt = appliedTimestamp;
+          this.syncSource = "remote";
+          this.$nextTick(() => {
+            this.isApplyingRemoteFleet = false;
+          });
+          this.updateCloudStatus("Sincronizado");
+          return;
+        }
+
         if (remoteUpdatedAt <= localUpdatedAt || (this.lastLocalWriteAt && remoteUpdatedAt < this.lastLocalWriteAt)) {
-          if (this.isOwner && remoteUpdatedAt < localUpdatedAt) {
-            this.updateCloudStatus("Actualizando remoto");
-            await this.saveFleetToFirestore();
-          } else {
-            this.updateCloudStatus("Sincronizado local");
-          }
+          this.updateCloudStatus("Sincronizado local");
           return;
         }
 
@@ -1681,11 +1737,8 @@ export default {
           this.updateLoginHint("Ingreso autenticado en modo editor.");
         }
 
+        await this.loadFleetFromFirestore();
         this.subscribeFleetFromFirestore();
-
-        if (this.isOwner) {
-          await this.saveFleetToFirestore();
-        }
       });
     }
   }
