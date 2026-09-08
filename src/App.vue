@@ -445,7 +445,7 @@
 </template>
 
 <script>
-import { hasStoredFleet, shouldApplyRemoteFleet } from "./syncRules.js";
+import { hasStoredFleet } from "./syncRules.js";
 
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const DB_META_KEY = "sr_aero_fleet_meta_v1";
@@ -660,6 +660,7 @@ export default {
       isOwner: false,
       isApplyingRemoteFleet: false,
       isSavingToFirestore: false,
+      lastLocalWriteAt: 0,
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
       loginEmail: "",
       loginPassword: "",
@@ -999,6 +1000,7 @@ export default {
       const timestamp = Date.now();
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(this.fleet));
       writeFleetMeta(timestamp);
+      this.lastLocalWriteAt = timestamp;
       this.lastSyncAt = timestamp;
       this.syncSource = "local";
       if (!this.isApplyingRemoteFleet) {
@@ -1008,8 +1010,11 @@ export default {
     },
 
     getRemoteUpdatedAt(data) {
+      if (data && Number.isFinite(Number(data.updatedEpoch)) && Number(data.updatedEpoch) > 0) {
+        return Number(data.updatedEpoch);
+      }
       if (!data || !data.updatedAt) {
-        return Number(data && data.updatedEpoch ? data.updatedEpoch : 0);
+        return 0;
       }
       if (typeof data.updatedAt.toMillis === "function") {
         return data.updatedAt.toMillis();
@@ -1018,7 +1023,7 @@ export default {
         return Number(data.updatedAt.seconds) * 1000;
       }
       const parsed = new Date(data.updatedAt).getTime();
-      return Number.isFinite(parsed) ? parsed : Number(data.updatedEpoch || 0);
+      return Number.isFinite(parsed) ? parsed : 0;
     },
 
     rowAssignedHours(row) {
@@ -1120,21 +1125,13 @@ export default {
           return;
         }
 
-        const useRemoteFleet = shouldApplyRemoteFleet({
-          hasLocalData: hasStoredFleet(localStorage),
-          localUpdatedAt,
-          remoteUpdatedAt,
-          isOwner: this.isOwner
-        });
-
-        if (!useRemoteFleet && !this.isOwner) {
-          this.updateCloudStatus("Sincronizado local");
-          return;
-        }
-
-        if (!useRemoteFleet && this.isOwner) {
-          this.updateCloudStatus("Actualizando remoto");
-          await this.saveFleetToFirestore();
+        if (remoteUpdatedAt <= localUpdatedAt || (this.lastLocalWriteAt && remoteUpdatedAt < this.lastLocalWriteAt)) {
+          if (this.isOwner && remoteUpdatedAt < localUpdatedAt) {
+            this.updateCloudStatus("Actualizando remoto");
+            await this.saveFleetToFirestore();
+          } else {
+            this.updateCloudStatus("Sincronizado local");
+          }
           return;
         }
 
@@ -1404,15 +1401,17 @@ export default {
       }
 
       const id = `${code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
       this.fleet.aircrafts.push({ id, code, name, rows: [] });
       this.fleet.selectedId = id;
       this.newAircraft.code = "";
       this.newAircraft.name = "";
       const saved = await this.persistFleet();
+      this.$nextTick(() => window.scrollTo(scrollX, scrollY));
       if (!saved) {
         window.alert("La aeronave se creo localmente, pero Firebase no la pudo sincronizar. Revisa reglas y login.");
       }
-      this.navigate("base-datos");
     },
 
     canDeleteAircraft(aircraft) {
