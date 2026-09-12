@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'text-large': textSizeLarge }">
     <section v-if="!isAuthenticated" class="login-screen">
       <form class="login-card" @submit.prevent="signInWithEmail">
         <div class="login-brand">
@@ -54,17 +54,16 @@
         </div>
 
         <button
-          class="menu-toggle"
+          class="sidebar-collapse-btn"
           type="button"
-          :aria-expanded="String(menuExpanded)"
-          aria-controls="sidebar-menu"
-          aria-label="Mostrar u ocultar menu"
-          @click="menuExpanded = !menuExpanded"
+          :aria-label="sidebarCollapsed ? 'Desplegar menu lateral' : 'Ocultar menu lateral'"
+          :title="sidebarCollapsed ? 'Desplegar menu' : 'Ocultar menu'"
+          @click="sidebarCollapsed = !sidebarCollapsed"
         >
-          <span class="hamburger-icon" aria-hidden="true">☰</span>
+          {{ sidebarCollapsed ? "›" : "‹" }}
         </button>
 
-        <nav id="sidebar-menu" class="menu" :class="{ collapsed: !menuExpanded }">
+        <nav id="sidebar-menu" class="menu">
           <a
             v-for="item in menuItems"
             :key="item.label"
@@ -103,6 +102,9 @@
           </div>
 
           <div class="top-actions">
+            <button class="chip text-size-btn" type="button" :title="textSizeLarge ? 'Achicar letras' : 'Agrandar letras'" @click="textSizeLarge = !textSizeLarge">
+              {{ textSizeLarge ? "A-" : "A+" }}
+            </button>
             <div class="chip aircraft-chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
             <div class="chip date-chip">{{ todayLabel }} <span>◷</span></div>
             <div class="chip firebase-chip" :class="{ 'sync-error': cloudStatusError }" :title="cloudErrorMessage || cloudStatus">
@@ -141,11 +143,13 @@
                     <template v-if="editingAircraftId === aircraft.id">
                       <input v-model.trim="editingAircraftDraft.code" class="aircraft-edit-input" type="text" maxlength="30" aria-label="Codigo de aeronave">
                       <input v-model.trim="editingAircraftDraft.name" class="aircraft-edit-input" type="text" maxlength="80" aria-label="Nombre de aeronave">
+                      <textarea v-model.trim="editingAircraftDraft.notes" class="aircraft-edit-input aircraft-notes-input" maxlength="240" aria-label="Notas de aeronave" placeholder="Notas"></textarea>
                       <p>Componentes: {{ aircraft.rows.length }}</p>
                     </template>
                     <template v-else>
                       <h3>{{ aircraft.code }}</h3>
                       <p>{{ aircraft.name }}</p>
+                      <p v-if="aircraft.notes" class="aircraft-notes">{{ aircraft.notes }}</p>
                       <p>Componentes: {{ aircraft.rows.length }}</p>
                     </template>
                     <div class="aircraft-actions">
@@ -174,6 +178,7 @@
               <form class="aircraft-form" @submit.prevent="createAircraft">
                 <input v-model.trim="newAircraft.code" type="text" maxlength="30" placeholder="Codigo (ej. PNP-700)" :disabled="!isOwner">
                 <input v-model.trim="newAircraft.name" type="text" maxlength="80" placeholder="Nombre (ej. Mi-171Sh)" :disabled="!isOwner">
+                <textarea v-model.trim="newAircraft.notes" maxlength="240" placeholder="Notas de la aeronave" :disabled="!isOwner"></textarea>
                 <button class="table-btn" type="submit" :disabled="!isOwner">Crear aeronave</button>
                 <p class="readonly-note" :class="{ visible: !isOwner }">Solo el propietario puede crear aeronaves.</p>
               </form>
@@ -182,7 +187,7 @@
         </section>
 
         <template v-if="activeView !== 'aeronaves'">
-          <section id="dashboard" ref="dashboard" class="grid-kpi view">
+          <section v-if="activeView === 'dashboard'" id="dashboard" ref="dashboard" class="grid-kpi view">
             <article class="kpi kpi-info">
               <div class="kpi-head">
                 <p class="kpi-title">Total Componentes</p>
@@ -236,7 +241,7 @@
             </article>
           </section>
 
-          <section id="main-grid-view" class="main-grid view">
+          <section v-if="activeView === 'dashboard'" id="main-grid-view" class="main-grid view">
             <article class="panel">
               <h2>Aeronave Seleccionada</h2>
               <p class="panel-sub">Serie {{ aircraftSeries }}</p>
@@ -292,7 +297,7 @@
             </article>
           </section>
 
-          <section class="analytics-grid view">
+          <section v-if="activeView === 'componentes'" id="componentes" class="analytics-grid view">
             <article class="panel analytics-panel">
               <h2>Consumo de Recursos por Categoría</h2>
               <p class="panel-sub">Distribución del consumo registrado</p>
@@ -356,7 +361,7 @@
             </article>
           </section>
 
-          <section id="base-datos" ref="baseDatos" class="panel table-panel view">
+          <section v-if="activeView === 'base-datos'" id="base-datos" ref="baseDatos" class="panel table-panel view">
             <div class="table-title">
               <h2>Base de Datos de Componentes</h2>
               <div class="table-tools">
@@ -373,6 +378,7 @@
               <table>
                 <thead>
                   <tr>
+                    <th>Orden</th>
                     <th>Componente</th>
                     <th>Serie</th>
                     <th>Taller</th>
@@ -381,6 +387,10 @@
                     <th>Asignado TBO (años)</th>
                     <th>Consumido TBO hrs</th>
                     <th>Consumido TBO años</th>
+                    <th>Asignado TSN (hrs)</th>
+                    <th>Asignado TSN (años)</th>
+                    <th>Consumido TSN hrs</th>
+                    <th>Consumido TSN años</th>
                     <th>Remanente TBO (hrs)</th>
                     <th>Remanente TBO (años)</th>
                     <th>Vencimiento</th>
@@ -389,7 +399,26 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, index) in currentRows" :key="`${currentAircraft.id}-${index}`">
+                  <tr
+                    v-for="(row, index) in currentRows"
+                    :key="`${currentAircraft.id}-${index}`"
+                    :class="{ 'dragging-row': draggingRowIndex === index }"
+                    @dragover.prevent
+                    @drop.prevent="dropRow(index)"
+                  >
+                    <td class="row-drag-cell">
+                      <button
+                        class="row-drag-handle"
+                        type="button"
+                        draggable="true"
+                        aria-label="Arrastrar componente"
+                        :disabled="!isOwner"
+                        @dragstart="startRowDrag($event, index)"
+                        @dragend="finishRowDrag"
+                      >
+                        ⋮⋮
+                      </button>
+                    </td>
                     <td><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="persistFleet"></div></td>
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
@@ -397,7 +426,11 @@
                     <td><input v-model="row.assignedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
                     <td><input v-model="row.assignedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
                     <td><input v-model="row.consumedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
-                    <td><input v-model="row.consumedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><input v-model="row.consumedTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.assignedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @change="persistFleet"></td>
+                    <td><input v-model="row.assignedTsnYears" class="cell-input numeric-input" :disabled="!isOwner" @change="persistFleet"></td>
+                    <td><input v-model="row.consumedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @change="persistFleet"></td>
+                    <td><input v-model="row.consumedTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTboHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
@@ -411,27 +444,82 @@
             </div>
           </section>
 
-          <section id="stats-view" class="stats-row view">
-            <article class="mini">
-              <p>Overhaul Requerido</p>
-              <b style="color: var(--danger)">{{ metrics.critical }}</b>
+          <section v-if="activeView === 'alertas'" id="alertas" class="view">
+            <div class="stats-row">
+              <article class="mini">
+                <p>Overhaul Requerido</p>
+                <b style="color: var(--danger)">{{ metrics.critical }}</b>
+              </article>
+              <article class="mini">
+                <p>Alertas Preventivas</p>
+                <b style="color: var(--warn)">{{ metrics.alert }}</b>
+              </article>
+              <article class="mini">
+                <p>Proximos 90 dias</p>
+                <b style="color: var(--warn)">{{ metrics.dueIn90 }}</b>
+              </article>
+              <article class="mini">
+                <p>Proximos 180 dias</p>
+                <b style="color: #ffd58f">{{ metrics.dueIn180 }}</b>
+              </article>
+              <article class="mini">
+                <p>Riesgo Global</p>
+                <b :style="{ color: riskLabel.color }">{{ metrics.risk }}%</b>
+              </article>
+            </div>
+
+            <article class="panel">
+              <h2>Componentes en Alerta</h2>
+              <p class="panel-sub">Elementos con vencimiento cercano o recursos consumidos</p>
+              <ul class="events">
+                <li v-for="alert in alertRows" :key="alert.key">
+                  <span>{{ alert.component }}</span>
+                  <span class="date" :class="alert.className">{{ alert.status }}</span>
+                </li>
+              </ul>
             </article>
-            <article class="mini">
-              <p>Proximos 90 dias</p>
-              <b style="color: var(--warn)">{{ metrics.dueIn90 }}</b>
-            </article>
-            <article class="mini">
-              <p>Proximos 180 dias</p>
-              <b style="color: #ffd58f">{{ metrics.dueIn180 }}</b>
-            </article>
-            <article class="mini">
-              <p>Total Horas Consumidas</p>
-              <b style="color: var(--accent-2)">{{ formatMetric(metrics.consumedTotal) }} h</b>
-            </article>
-            <article class="mini">
-              <p>Total Horas Remanentes</p>
-              <b style="color: #65f39a">{{ formatMetric(metrics.remainingTotal) }} h</b>
-            </article>
+          </section>
+
+          <section v-if="activeView === 'calendario'" id="calendario" class="panel view">
+            <h2>Calendario de Vencimientos</h2>
+            <p class="panel-sub">Proximos controles por fecha</p>
+            <ul class="events">
+              <li v-for="event in dueEvents" :key="event.key">
+                <span>{{ event.component }}</span>
+                <span class="date" :class="event.className">{{ event.due }}</span>
+              </li>
+            </ul>
+          </section>
+
+          <section v-if="activeView === 'historial'" id="historial" class="panel table-panel view">
+            <div class="table-title">
+              <h2>Historial de Overhaul</h2>
+              <p class="panel-sub">Registro por componente y taller</p>
+            </div>
+            <div class="table-wrap">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Componente</th>
+                    <th>Serie</th>
+                    <th>Taller</th>
+                    <th>Ultimo Overhaul</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="entry in historyRows" :key="entry.key">
+                    <td>{{ entry.component }}</td>
+                    <td>{{ entry.series }}</td>
+                    <td>{{ entry.workshop }}</td>
+                    <td>{{ entry.overhaul }}</td>
+                    <td>{{ entry.due }}</td>
+                    <td><span class="status" :class="entry.statusClass">{{ entry.status }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
         </template>
 
@@ -522,14 +610,32 @@ function formatNumberValue(value) {
   return Number.isInteger(number) ? String(number) : String(Number(number.toFixed(2)));
 }
 
+function calculateConsumedYears(overhaul) {
+  const overhaulDate = parseEsDate(overhaul);
+  if (!overhaulDate || overhaulDate > TODAY) {
+    return "0";
+  }
+
+  const elapsedMs = TODAY.getTime() - overhaulDate.getTime();
+  const years = elapsedMs / (365.25 * 86400000);
+  return formatNumberValue(years);
+}
+
+function currentConsumedDate() {
+  return formatEsDate(TODAY);
+}
+
 function normalizeRow(row) {
   const assignedTboHours = String(row.assignedTboHours ?? row.assigned ?? "");
   const assignedTboYears = String(row.assignedTboYears ?? "");
   const consumedTboHours = String(row.consumedTboHours ?? row.consumed ?? "");
-  const consumedTboYears = String(row.consumedTboYears ?? "");
+  const consumedDate = currentConsumedDate();
+  const assignedTsnHours = String(row.assignedTsnHours ?? "");
+  const assignedTsnYears = String(row.assignedTsnYears ?? "");
+  const consumedTsnHours = String(row.consumedTsnHours ?? "");
   const remainingTboHours = formatNumberValue(parseNumeric(assignedTboHours) - parseNumeric(consumedTboHours));
-  const remainingTboYears = formatNumberValue(parseNumeric(assignedTboYears) - parseNumeric(consumedTboYears));
   const due = calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
+  const remainingTboYears = due;
 
   return {
     component: String(row.component || ""),
@@ -542,7 +648,11 @@ function normalizeRow(row) {
     assignedTboHours,
     assignedTboYears,
     consumedTboHours,
-    consumedTboYears,
+    consumedTboYears: consumedDate,
+    assignedTsnHours,
+    assignedTsnYears,
+    consumedTsnHours,
+    consumedTsnYears: consumedDate,
     remainingTboHours,
     remainingTboYears,
     due
@@ -667,20 +777,22 @@ export default {
       loginEmail: "",
       loginPassword: "",
       syncSource: "local",
-      menuExpanded: true,
       mobileMenuOpen: false,
-      newAircraft: { code: "", name: "" },
+      sidebarCollapsed: false,
+      textSizeLarge: false,
+      newAircraft: { code: "", name: "", notes: "" },
       editingAircraftId: "",
-      editingAircraftDraft: { code: "", name: "" },
+      editingAircraftDraft: { code: "", name: "", notes: "" },
       draggingAircraftId: "",
+      draggingRowIndex: null,
       menuItems: [
         { label: "Dashboard", target: "dashboard", icon: "⌂" },
         { label: "Aeronaves", target: "aeronaves", icon: "✈" },
-        { label: "Componentes", target: "dashboard", icon: "⚙" },
+        { label: "Componentes", target: "componentes", icon: "⚙" },
         { label: "Base de datos", target: "base-datos", icon: "▦" },
-        { label: "Alertas", target: "dashboard", icon: "!" },
-        { label: "Calendario", target: "dashboard", icon: "◷" },
-        { label: "Historial", target: "dashboard", icon: "≡" }
+        { label: "Alertas", target: "alertas", icon: "!" },
+        { label: "Calendario", target: "calendario", icon: "◷" },
+        { label: "Historial", target: "historial", icon: "≡" }
       ]
     };
   },
@@ -952,6 +1064,38 @@ export default {
           className: status === "CRITICO" ? "danger" : status === "ALERTA" ? "warn" : "ok"
         };
       });
+    },
+
+    alertRows() {
+      const rows = this.currentRows
+        .map((row, index) => {
+          const status = this.getStatus(row);
+          return {
+            key: `${row.component}-${index}`,
+            component: row.component || "Sin nombre",
+            status,
+            className: status === "CRITICO" ? "danger" : "warn"
+          };
+        })
+        .filter((entry) => entry.status === "CRITICO" || entry.status === "ALERTA");
+
+      return rows.length ? rows : [{ key: "empty", component: "Sin alertas activas", status: "OK", className: "ok" }];
+    },
+
+    historyRows() {
+      return this.currentRows.map((row, index) => {
+        const status = this.getStatus(row);
+        return {
+          key: `${row.component}-${row.series}-${index}`,
+          component: row.component || "Sin nombre",
+          series: row.series || "--",
+          workshop: row.workshop || "--",
+          overhaul: row.overhaul || "--",
+          due: row.due || "--",
+          status,
+          statusClass: this.statusClass(row)
+        };
+      });
     }
   },
 
@@ -1041,11 +1185,13 @@ export default {
     },
 
     updateTboDerived(row) {
+      const consumedDate = currentConsumedDate();
       const remainingHours = this.rowAssignedHours(row) - this.rowConsumedHours(row);
-      const remainingYears = parseNumeric(row.assignedTboYears) - parseNumeric(row.consumedTboYears);
       const due = calculateDueDate(row.overhaul, row.assignedTboYears);
+      row.consumedTboYears = consumedDate;
+      row.consumedTsnYears = consumedDate;
       row.remainingTboHours = formatNumberValue(remainingHours);
-      row.remainingTboYears = formatNumberValue(remainingYears);
+      row.remainingTboYears = due || "";
       row.assigned = String(row.assignedTboHours ?? "");
       row.consumed = String(row.consumedTboHours ?? "");
       row.remaining = row.remainingTboHours;
@@ -1088,6 +1234,7 @@ export default {
           id: String(aircraft.id || ""),
           code: String(aircraft.code || ""),
           name: String(aircraft.name || ""),
+          notes: String(aircraft.notes || ""),
           rows: Array.isArray(aircraft.rows) ? aircraft.rows.map(normalizeRow) : []
         })).filter((aircraft) => aircraft.id && aircraft.code)
       };
@@ -1326,14 +1473,12 @@ export default {
 
     navigate(targetId, menuLabel = "") {
       this.activeView = targetId;
-      this.activeMenuLabel = menuLabel || (targetId === "aeronaves" ? "Aeronaves" : targetId === "base-datos" ? "Base de datos" : "Dashboard");
+      this.activeMenuLabel = menuLabel || this.menuItems.find((item) => item.target === targetId)?.label || "Dashboard";
       this.setMobileMenuOpen(false);
       this.$nextTick(() => {
-        if (targetId === "base-datos" && this.$refs.baseDatos) {
-          this.highlightAndScroll(this.$refs.baseDatos);
-        }
-        if (targetId === "dashboard" && this.$refs.dashboard) {
-          this.highlightAndScroll(this.$refs.dashboard);
+        const element = document.getElementById(targetId);
+        if (element) {
+          this.highlightAndScroll(element);
         }
       });
     },
@@ -1359,12 +1504,12 @@ export default {
         return;
       }
       this.editingAircraftId = aircraft.id;
-      this.editingAircraftDraft = { code: aircraft.code, name: aircraft.name };
+      this.editingAircraftDraft = { code: aircraft.code, name: aircraft.name, notes: aircraft.notes || "" };
     },
 
     cancelAircraftEdit() {
       this.editingAircraftId = "";
-      this.editingAircraftDraft = { code: "", name: "" };
+      this.editingAircraftDraft = { code: "", name: "", notes: "" };
     },
 
     async saveAircraftEdit(aircraftId) {
@@ -1376,6 +1521,7 @@ export default {
       const aircraft = this.fleet.aircrafts.find((item) => item.id === aircraftId);
       const code = this.editingAircraftDraft.code.trim().toUpperCase();
       const name = this.editingAircraftDraft.name.trim();
+      const notes = this.editingAircraftDraft.notes.trim();
       if (!aircraft || !code || !name) {
         window.alert("Ingresa codigo y nombre para guardar la aeronave.");
         return;
@@ -1389,6 +1535,7 @@ export default {
 
       aircraft.code = code;
       aircraft.name = name;
+      aircraft.notes = notes;
       this.cancelAircraftEdit();
       const saved = await this.persistFleet();
       if (!saved) {
@@ -1446,6 +1593,7 @@ export default {
 
       const code = this.newAircraft.code.trim().toUpperCase();
       const name = this.newAircraft.name.trim();
+      const notes = this.newAircraft.notes.trim();
       if (!code || !name) {
         window.alert("Ingresa codigo y nombre para crear la aeronave.");
         return;
@@ -1460,10 +1608,11 @@ export default {
       const id = `${code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
-      this.fleet.aircrafts.push({ id, code, name, rows: [] });
+      this.fleet.aircrafts.push({ id, code, name, notes, rows: [] });
       this.fleet.selectedId = id;
       this.newAircraft.code = "";
       this.newAircraft.name = "";
+      this.newAircraft.notes = "";
       const saved = await this.persistFleet();
       this.$nextTick(() => window.scrollTo(scrollX, scrollY));
       if (!saved) {
@@ -1523,12 +1672,57 @@ export default {
         assignedTboHours: "0",
         assignedTboYears: "1",
         consumedTboHours: "0",
-        consumedTboYears: "0",
+        consumedTboYears: currentConsumedDate(),
+        assignedTsnHours: "0",
+        assignedTsnYears: "1",
+        consumedTsnHours: "0",
+        consumedTsnYears: currentConsumedDate(),
         remainingTboHours: "0",
         remainingTboYears: "0",
         due: calculateDueDate(formatEsDate(TODAY), "1")
       }));
       await this.persistFleet();
+    },
+
+    startRowDrag(event, rowIndex) {
+      if (!this.isOwner) {
+        event.preventDefault();
+        return;
+      }
+      this.draggingRowIndex = rowIndex;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(rowIndex));
+    },
+
+    async dropRow(targetIndex) {
+      if (!this.isOwner || !this.currentAircraft || !Array.isArray(this.currentAircraft.rows)) {
+        this.finishRowDrag();
+        return;
+      }
+
+      if (this.draggingRowIndex === null) {
+        return;
+      }
+
+      const draggedIndex = Number(this.draggingRowIndex);
+      if (!Number.isInteger(draggedIndex) || draggedIndex < 0 || targetIndex < 0 || targetIndex >= this.currentAircraft.rows.length || draggedIndex === targetIndex) {
+        this.finishRowDrag();
+        return;
+      }
+
+      const rows = [...this.currentAircraft.rows];
+      const [draggedRow] = rows.splice(draggedIndex, 1);
+      rows.splice(targetIndex, 0, draggedRow);
+      this.currentAircraft.rows = rows;
+      this.finishRowDrag();
+      const saved = await this.persistFleet();
+      if (!saved) {
+        window.alert("El orden se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
+      }
+    },
+
+    finishRowDrag() {
+      this.draggingRowIndex = null;
     },
 
     async resetDb() {

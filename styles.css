@@ -178,6 +178,11 @@ body.auth-locked {
   display: grid;
   grid-template-columns: 224px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.sidebar-collapsed .layout {
+  grid-template-columns: 76px 1fr;
 }
 
 .sidebar {
@@ -191,12 +196,33 @@ body.auth-locked {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  transition: padding 0.2s ease, align-items 0.2s ease;
+}
+
+.sidebar-collapsed .sidebar {
+  align-items: center;
+  padding: 14px 9px;
+  gap: 14px;
 }
 
 .brand {
   padding: 7px 10px 18px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 2px;
+}
+
+.sidebar-collapsed .brand {
+  margin: 0;
+  padding: 8px;
+  border-bottom: 0;
+}
+
+.sidebar-collapsed .brand::before {
+  content: "DIV";
+  font-family: Rajdhani, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #d9e8ff;
 }
 
 .brand-title {
@@ -216,6 +242,35 @@ body.auth-locked {
   letter-spacing: 0.14em;
 }
 
+.sidebar-collapsed .brand-title,
+.sidebar-collapsed .brand-sub,
+.sidebar-collapsed .menu-label,
+.sidebar-collapsed .profile {
+  display: none;
+}
+
+.sidebar-collapse-btn {
+  width: 40px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(80, 150, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(7, 21, 45, 0.72);
+  color: #d7e6ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 0 3px;
+}
+
+.sidebar-collapse-btn:hover {
+  border-color: rgba(114, 199, 255, 0.55);
+  background: rgba(34, 78, 140, 0.36);
+}
+
 .menu {
   display: flex;
   flex-direction: column;
@@ -226,45 +281,8 @@ body.auth-locked {
   transition: max-height 0.22s ease, opacity 0.18s ease, transform 0.22s ease;
 }
 
-.menu.collapsed {
-  max-height: 0;
-  opacity: 0;
-  transform: scaleY(0.96);
-  pointer-events: none;
-}
-
-.menu-toggle {
-  width: 40px;
-  min-height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(80, 150, 255, 0.14);
-  border-radius: 8px;
-  background: rgba(7, 21, 45, 0.5);
-  color: #9fb9d9;
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 0;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-}
-
-.menu-toggle:hover {
-  border-color: rgba(80, 150, 255, 0.26);
-  background: rgba(34, 78, 140, 0.28);
-  color: #e3f0ff;
-}
-
-.hamburger-icon {
-  font-size: 20px;
-  line-height: 1;
-  transition: transform 0.18s ease;
-}
-
-.menu-toggle[aria-expanded="false"] .hamburger-icon {
-  transform: rotate(90deg);
+.sidebar-collapsed .menu {
+  width: 100%;
 }
 
 .menu-item {
@@ -284,6 +302,12 @@ body.auth-locked {
   font-size: 14px;
 }
 
+.sidebar-collapsed .menu-item {
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px;
+}
+
 .menu-icon {
   width: 21px;
   height: 21px;
@@ -295,6 +319,10 @@ body.auth-locked {
   font-weight: 700;
   line-height: 1;
   flex: 0 0 auto;
+}
+
+.sidebar-collapsed .menu-icon {
+  font-size: 18px;
 }
 
 .menu-item:hover {
@@ -441,6 +469,30 @@ body.auth-locked {
   justify-content: center;
   gap: 8px;
   white-space: nowrap;
+}
+
+.text-size-btn {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.text-large .content,
+.text-large .panel,
+.text-large .mini,
+.text-large .chip,
+.text-large .menu-item,
+.text-large .cell-input,
+.text-large .table-btn,
+.text-large .auth-btn {
+  font-size: 1.08em;
+}
+
+.text-large .topbar-brand h1 {
+  font-size: 32px;
+}
+
+.text-large th {
+  font-size: 12px;
 }
 
 .aircraft-chip {
@@ -617,6 +669,7 @@ body.auth-locked {
 
 .auth-email-form input,
 .aircraft-form input,
+.aircraft-form textarea,
 .cell-input {
   border: 1px solid rgba(125, 169, 237, 0.25);
   background: rgba(5, 18, 40, 0.82);
@@ -628,6 +681,7 @@ body.auth-locked {
 
 .auth-email-form input:focus,
 .aircraft-form input:focus,
+.aircraft-form textarea:focus,
 .cell-input:focus {
   outline: none;
   border-color: rgba(104, 165, 255, 0.8);
@@ -1265,7 +1319,8 @@ body.auth-locked {
 .cell-input:disabled,
 .auth-inline-input:disabled,
 .login-input:disabled,
-.aircraft-form input:disabled {
+.aircraft-form input:disabled,
+.aircraft-form textarea:disabled {
   cursor: not-allowed;
   opacity: 0.62;
 }
@@ -1277,8 +1332,12 @@ body.auth-locked {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1320px;
+  min-width: 1740px;
   font-size: 13px;
+}
+
+.history-table {
+  min-width: 760px;
 }
 
 th,
@@ -1313,6 +1372,40 @@ th {
   opacity: 1;
 }
 
+.row-drag-cell {
+  width: 58px;
+  text-align: center;
+}
+
+.row-drag-handle {
+  width: 34px;
+  min-height: 34px;
+  border: 1px solid rgba(80, 150, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(9, 28, 60, 0.76);
+  color: #9fbfe7;
+  cursor: grab;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.2em;
+  line-height: 1;
+  padding: 0 6px 0 0;
+}
+
+.row-drag-handle:active {
+  cursor: grabbing;
+}
+
+.row-drag-handle:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.dragging-row {
+  opacity: 0.45;
+}
+
 .status {
   border-radius: 999px;
   font-size: 11px;
@@ -1328,6 +1421,11 @@ th {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+
+#alertas {
+  display: grid;
+  gap: 14px;
 }
 
 .mini {
@@ -1408,6 +1506,11 @@ th {
   font-size: 13px;
 }
 
+.aircraft-notes {
+  white-space: normal;
+  line-height: 1.35;
+}
+
 .aircraft-card.active {
   border-color: rgba(104, 165, 255, 0.8);
   box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.25);
@@ -1423,6 +1526,13 @@ th {
   display: grid;
   gap: 10px;
   align-content: start;
+}
+
+.aircraft-form textarea,
+.aircraft-notes-input {
+  width: 100%;
+  min-height: 74px;
+  resize: vertical;
 }
 
 .empty-note {
@@ -1456,7 +1566,6 @@ footer {
   .sidebar { align-items: center; padding: 14px 9px; gap: 14px; }
   .brand { margin: 0; padding: 8px; border-bottom: 0; }
   .brand::before { content: "DIV"; font-family: Rajdhani, sans-serif; font-size: 22px; font-weight: 700; color: #d9e8ff; }
-  .menu-toggle { width: 42px; }
   .menu { width: 100%; }
   .menu-item { justify-content: center; min-height: 42px; padding: 10px; }
   .menu-icon { font-size: 18px; }
@@ -1552,7 +1661,6 @@ footer {
 
   .brand,
   .menu,
-  .menu-toggle,
   .brand-title,
   .brand-sub,
   .menu-label,
@@ -1576,12 +1684,6 @@ footer {
   }
 
   .menu { display: grid; gap: 6px; }
-
-  .menu-toggle {
-    display: grid;
-    width: 42px;
-    margin-left: 8px;
-  }
 
   .menu-item {
     display: flex;
@@ -1649,7 +1751,7 @@ footer {
   .plane-title { font-size: 40px; }
   .chart-grid { grid-template-columns: repeat(3, minmax(44px, 1fr)); min-height: 150px; }
   .events li { font-size: 12px; }
-  table { min-width: 1320px; }
+  table { min-width: 1740px; }
   footer { padding-bottom: 16px; font-size: 11px; }
 }
 
