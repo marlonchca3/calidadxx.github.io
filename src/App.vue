@@ -31,9 +31,11 @@
 
         <div class="login-actions">
           <button class="login-btn primary" type="submit" :disabled="authBusy || !authReady">
+            <img class="btn-icon" :src="icons.login" alt="" aria-hidden="true">
             {{ authBusy ? "Procesando..." : "Ingresar" }}
           </button>
           <button class="login-btn" type="button" :disabled="authBusy || !authReady" @click="createEmailUser">
+            <img class="btn-icon" :src="icons.user" alt="" aria-hidden="true">
             Crear cuenta
           </button>
         </div>
@@ -72,7 +74,7 @@
             :href="`#${item.target}`"
             @click.prevent="navigate(item.target, item.label)"
           >
-            <span class="menu-icon" aria-hidden="true">{{ item.icon }}</span>
+            <span class="menu-icon" aria-hidden="true"><img :src="item.icon" alt=""></span>
             <span class="menu-label">{{ item.label }}</span>
           </a>
         </nav>
@@ -106,9 +108,9 @@
               {{ textSizeLarge ? "A-" : "A+" }}
             </button>
             <div class="chip aircraft-chip"><span>{{ aircraftChip }}</span> <span>▼</span></div>
-            <div class="chip date-chip">{{ todayLabel }} <span>◷</span></div>
+            <div class="chip date-chip"><img class="chip-icon" :src="icons.calendar" alt="" aria-hidden="true"> {{ todayLabel }}</div>
             <div class="chip firebase-chip" :class="{ 'sync-error': cloudStatusError }" :title="cloudErrorMessage || cloudStatus">
-              <span class="sync-dot"></span>
+              <img class="chip-icon" :src="icons.sync" alt="" aria-hidden="true">
               <span>Firebase {{ cloudStatusText }}</span>
             </div>
             <div class="chip sync-info-chip" :title="`Fuente: ${syncSourceText}`">
@@ -116,8 +118,11 @@
               <span>Últ. sync: {{ lastSyncLabel }}</span>
             </div>
             <div class="auth-box" :title="authHint">
-              <span class="auth-status">{{ authStatus }}</span>
-              <button class="auth-btn" type="button" @click="signOut">Cerrar sesion</button>
+              <span class="auth-status"><img class="btn-icon" :src="icons.user" alt="" aria-hidden="true">{{ authStatus }}</span>
+              <button class="auth-btn" type="button" @click="signOut">
+                <img class="btn-icon" :src="icons.signOut" alt="" aria-hidden="true">
+                Cerrar sesion
+              </button>
             </div>
           </div>
         </header>
@@ -154,12 +159,21 @@
                     </template>
                     <div class="aircraft-actions">
                       <template v-if="editingAircraftId === aircraft.id">
-                        <button class="table-btn" type="button" :disabled="!isOwner" @click="saveAircraftEdit(aircraft.id)">Guardar</button>
+                        <button class="table-btn" type="button" :disabled="!isOwner" @click="saveAircraftEdit(aircraft.id)"><img class="btn-icon" :src="icons.save" alt="" aria-hidden="true">Guardar</button>
                         <button class="table-btn" type="button" @click="cancelAircraftEdit">Cancelar</button>
                       </template>
                       <template v-else>
-                        <button class="table-btn" type="button" @click="openAircraft(aircraft.id)">Abrir</button>
-                        <button class="table-btn" type="button" :disabled="!isOwner" @click="startAircraftEdit(aircraft)">Editar</button>
+                        <button class="table-btn" type="button" @click="openAircraft(aircraft.id)"><img class="btn-icon" :src="icons.aircrafts" alt="" aria-hidden="true">Abrir</button>
+                        <button class="table-btn" type="button" :disabled="!isOwner" @click="startAircraftEdit(aircraft)"><img class="btn-icon" :src="icons.edit" alt="" aria-hidden="true">Editar</button>
+                        <button
+                          class="table-btn aircraft-download-btn"
+                          type="button"
+                          :aria-label="`Descargar PDF de ${aircraft.code}`"
+                          :title="`Descargar PDF de ${aircraft.code}`"
+                          @click="downloadAircraftPdf(aircraft)"
+                        >
+                          <img class="btn-icon" :src="icons.download" alt="" aria-hidden="true">
+                        </button>
                       </template>
                       <button
                         v-if="canDeleteAircraft(aircraft)"
@@ -167,6 +181,7 @@
                         type="button"
                         @click="deleteAircraft(aircraft.id)"
                       >
+                        <img class="btn-icon" :src="icons.delete" alt="" aria-hidden="true">
                         Eliminar
                       </button>
                     </div>
@@ -179,7 +194,7 @@
                 <input v-model.trim="newAircraft.code" type="text" maxlength="30" placeholder="Codigo (ej. PNP-700)" :disabled="!isOwner">
                 <input v-model.trim="newAircraft.name" type="text" maxlength="80" placeholder="Nombre (ej. Mi-171Sh)" :disabled="!isOwner">
                 <textarea v-model.trim="newAircraft.notes" maxlength="240" placeholder="Notas de la aeronave" :disabled="!isOwner"></textarea>
-                <button class="table-btn" type="submit" :disabled="!isOwner">Crear aeronave</button>
+                <button class="table-btn" type="submit" :disabled="!isOwner"><img class="btn-icon" :src="icons.add" alt="" aria-hidden="true">Crear aeronave</button>
                 <p class="readonly-note" :class="{ visible: !isOwner }">Solo el propietario puede crear aeronaves.</p>
               </form>
             </div>
@@ -191,7 +206,7 @@
             <article class="kpi kpi-info">
               <div class="kpi-head">
                 <p class="kpi-title">Total Componentes</p>
-                <span class="kpi-icon" aria-hidden="true">▦</span>
+                <span class="kpi-icon" aria-hidden="true"><img :src="icons.components" alt=""></span>
               </div>
               <p class="kpi-value">{{ metrics.total }}</p>
               <p class="kpi-meta"><span>Registrados</span><strong>100%</strong></p>
@@ -201,7 +216,7 @@
             <article class="kpi kpi-danger">
               <div class="kpi-head">
                 <p class="kpi-title">Críticos / Overhaul</p>
-                <span class="kpi-icon" aria-hidden="true">!</span>
+                <span class="kpi-icon" aria-hidden="true"><img :src="icons.overhaul" alt=""></span>
               </div>
               <p class="kpi-value">{{ metrics.critical }}</p>
               <p class="kpi-meta"><span>Requieren atención</span><strong>{{ pct(metrics.critical) }}</strong></p>
@@ -211,7 +226,7 @@
             <article class="kpi kpi-warn">
               <div class="kpi-head">
                 <p class="kpi-title">Alertas Preventivas</p>
-                <span class="kpi-icon" aria-hidden="true">△</span>
+                <span class="kpi-icon" aria-hidden="true"><img :src="icons.alerts" alt=""></span>
               </div>
               <p class="kpi-value">{{ metrics.alert }}</p>
               <p class="kpi-meta"><span>Seguimiento cercano</span><strong>{{ pct(metrics.alert) }}</strong></p>
@@ -221,7 +236,7 @@
             <article class="kpi kpi-ok">
               <div class="kpi-head">
                 <p class="kpi-title">En Condiciones</p>
-                <span class="kpi-icon" aria-hidden="true">✓</span>
+                <span class="kpi-icon" aria-hidden="true"><img :src="icons.serviceTime" alt=""></span>
               </div>
               <p class="kpi-value">{{ metrics.ok }}</p>
               <p class="kpi-meta"><span>Operativos</span><strong>{{ pct(metrics.ok) }}</strong></p>
@@ -286,7 +301,7 @@
             </article>
 
             <article class="panel">
-              <h2>Proximos Vencimientos</h2>
+              <h2 class="icon-heading"><img :src="icons.due" alt="" aria-hidden="true">Proximos Vencimientos</h2>
               <p class="panel-sub">Control calendario</p>
               <ul class="events">
                 <li v-for="event in dueEvents" :key="event.key">
@@ -365,8 +380,8 @@
             <div class="table-title">
               <h2>Base de Datos de Componentes</h2>
               <div class="table-tools">
-                <button class="table-btn" type="button" :disabled="!isOwner" @click="addRow">Agregar componente</button>
-                <button class="table-btn" type="button" :disabled="!isOwner" @click="resetDb">Restaurar datos</button>
+                <button class="table-btn" type="button" :disabled="!isOwner" @click="addRow"><img class="btn-icon" :src="icons.add" alt="" aria-hidden="true">Agregar componente</button>
+                <button class="table-btn" type="button" :disabled="!isOwner" @click="resetDb"><img class="btn-icon" :src="icons.database" alt="" aria-hidden="true">Restaurar datos</button>
               </div>
             </div>
 
@@ -442,7 +457,7 @@
                     <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
                     <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
                     <td>
-                      <button class="table-btn danger-btn" type="button" :disabled="!isOwner" @click="deleteRow(index)">Eliminar</button>
+                      <button class="table-btn danger-btn" type="button" :disabled="!isOwner" @click="deleteRow(index)"><img class="btn-icon" :src="icons.delete" alt="" aria-hidden="true">Eliminar</button>
                     </td>
                   </tr>
                 </tbody>
@@ -487,7 +502,7 @@
           </section>
 
           <section v-if="activeView === 'calendario'" id="calendario" class="panel view">
-            <h2>Calendario de Vencimientos</h2>
+            <h2 class="icon-heading"><img :src="icons.due" alt="" aria-hidden="true">Calendario de Vencimientos</h2>
             <p class="panel-sub">Proximos controles por fecha</p>
             <ul class="events">
               <li v-for="event in dueEvents" :key="event.key">
@@ -553,6 +568,25 @@
 
 <script>
 import { hasStoredFleet } from "./syncRules.js";
+import addIcon from "./icons/agregar.svg";
+import aircraftsIcon from "./icons/aeronaves.svg";
+import alertsIcon from "./icons/alertas.svg";
+import calendarIcon from "./icons/calendario.svg";
+import componentsIcon from "./icons/componentes.svg";
+import dashboardIcon from "./icons/dashboard.svg";
+import databaseIcon from "./icons/base-datos.svg";
+import deleteIcon from "./icons/eliminar.svg";
+import downloadIcon from "./icons/descargar.svg";
+import editIcon from "./icons/editar.svg";
+import historyIcon from "./icons/historial.svg";
+import loginIcon from "./icons/iniciar-sesion.svg";
+import overhaulIcon from "./icons/overhaul.svg";
+import saveIcon from "./icons/guardar.svg";
+import serviceTimeIcon from "./icons/tiempo-servicio.svg";
+import signOutIcon from "./icons/cerrar-sesion.svg";
+import syncIcon from "./icons/sincronizacion.svg";
+import userIcon from "./icons/usuario.svg";
+import dueIcon from "./icons/vencimiento.svg";
 
 const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const DB_META_KEY = "sr_aero_fleet_meta_v1";
@@ -773,6 +807,45 @@ function calculateDueDate(overhaul, assignedTboYears) {
   return dueDate ? formatEsDate(dueDate) : "";
 }
 
+function sanitizePdfText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function escapePdfText(value) {
+  return sanitizePdfText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function sanitizeFilename(value) {
+  const filename = sanitizePdfText(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return filename || "aeronave";
+}
+
+function wrapPdfText(value, maxLength) {
+  const words = sanitizePdfText(value).split(" ").filter(Boolean);
+  const lines = [];
+  let current = "";
+
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxLength && current) {
+      lines.push(current);
+      current = word;
+      return;
+    }
+    current = next;
+  });
+
+  if (current) {
+    lines.push(current);
+  }
+  return lines.length ? lines : ["--"];
+}
+
 function isFirebaseConfigReady() {
   return Object.values(firebaseConfig).every((value) => value && !String(value).startsWith("REEMPLAZAR_"));
 }
@@ -826,19 +899,40 @@ export default {
       mobileMenuOpen: false,
       sidebarCollapsed: false,
       textSizeLarge: false,
+      icons: {
+        add: addIcon,
+        aircrafts: aircraftsIcon,
+        alerts: alertsIcon,
+        calendar: calendarIcon,
+        components: componentsIcon,
+        dashboard: dashboardIcon,
+        database: databaseIcon,
+        delete: deleteIcon,
+        download: downloadIcon,
+        due: dueIcon,
+        edit: editIcon,
+        history: historyIcon,
+        login: loginIcon,
+        overhaul: overhaulIcon,
+        save: saveIcon,
+        serviceTime: serviceTimeIcon,
+        signOut: signOutIcon,
+        sync: syncIcon,
+        user: userIcon
+      },
       newAircraft: { code: "", name: "", notes: "" },
       editingAircraftId: "",
       editingAircraftDraft: { code: "", name: "", notes: "" },
       draggingAircraftId: "",
       draggingRowIndex: null,
       menuItems: [
-        { label: "Dashboard", target: "dashboard", icon: "⌂" },
-        { label: "Aeronaves", target: "aeronaves", icon: "✈" },
-        { label: "Componentes", target: "componentes", icon: "⚙" },
-        { label: "Base de datos", target: "base-datos", icon: "▦" },
-        { label: "Alertas", target: "alertas", icon: "!" },
-        { label: "Calendario", target: "calendario", icon: "◷" },
-        { label: "Historial", target: "historial", icon: "≡" }
+        { label: "Dashboard", target: "dashboard", icon: dashboardIcon },
+        { label: "Aeronaves", target: "aeronaves", icon: aircraftsIcon },
+        { label: "Componentes", target: "componentes", icon: componentsIcon },
+        { label: "Base de datos", target: "base-datos", icon: databaseIcon },
+        { label: "Alertas", target: "alertas", icon: alertsIcon },
+        { label: "Calendario", target: "calendario", icon: calendarIcon },
+        { label: "Historial", target: "historial", icon: historyIcon }
       ]
     };
   },
@@ -1544,6 +1638,182 @@ export default {
 
     formatMetric(value) {
       return new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value);
+    },
+
+    downloadAircraftPdf(aircraft) {
+      if (!aircraft) {
+        return;
+      }
+
+      const pdf = this.createAircraftPdf(aircraft);
+      const blob = new Blob([pdf], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${sanitizeFilename(aircraft.code)}-${sanitizeFilename(aircraft.name)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+
+    createAircraftPdf(aircraft) {
+      const pageWidth = 842;
+      const pageHeight = 595;
+      const margin = 34;
+      const contentWidth = pageWidth - margin * 2;
+      const pages = [];
+      let commands = [];
+      let y = pageHeight - margin;
+
+      const addPage = () => {
+        if (commands.length) {
+          pages.push(commands.join("\n"));
+        }
+        commands = [];
+        y = pageHeight - margin;
+      };
+      const ensureSpace = (needed) => {
+        if (y - needed < margin) {
+          addPage();
+        }
+      };
+      const text = (value, x, yPosition, size = 9, font = "F1") => {
+        commands.push(`BT /${font} ${size} Tf ${x} ${yPosition} Td (${escapePdfText(value)}) Tj ET`);
+      };
+      const line = (x1, y1, x2, y2) => {
+        commands.push(`0.72 w ${x1} ${y1} m ${x2} ${y2} l S`);
+      };
+      const addTextLine = (value, x = margin, size = 9, font = "F1", step = 13) => {
+        ensureSpace(step);
+        text(value, x, y, size, font);
+        y -= step;
+      };
+      const addWrapped = (label, value, x, maxLength, size = 9) => {
+        const lines = wrapPdfText(`${label}: ${value || "--"}`, maxLength);
+        lines.forEach((entry) => addTextLine(entry, x, size));
+      };
+
+      const rows = Array.isArray(aircraft.rows) ? aircraft.rows : [];
+      const critical = rows.filter((row) => this.getStatus(row) === "CRITICO").length;
+      const alert = rows.filter((row) => this.getStatus(row) === "ALERTA").length;
+      const ok = rows.filter((row) => this.getStatus(row) === "OK").length;
+      const assigned = rows.reduce((sum, row) => sum + this.rowAssignedHours(row), 0);
+      const consumed = rows.reduce((sum, row) => sum + this.rowConsumedHours(row), 0);
+      const remaining = rows.reduce((sum, row) => sum + this.rowRemainingHours(row), 0);
+      const firstDue = rows
+        .map((row) => ({ row, dueDate: parseEsDate(row.due) }))
+        .filter((entry) => entry.dueDate)
+        .sort((a, b) => a.dueDate - b.dueDate)[0];
+      const state = critical > 0 ? "CRITICO" : alert > 0 ? "ALERTA" : rows.length ? "OPERATIVO" : "SIN DATOS";
+
+      addTextLine("DIVMAAER - Control de Calidad", margin, 10, "F2", 16);
+      addTextLine(`Reporte de Aeronave: ${aircraft.code}`, margin, 20, "F2", 24);
+      addTextLine(aircraft.name || "--", margin, 13, "F1", 18);
+      line(margin, y + 3, pageWidth - margin, y + 3);
+      y -= 12;
+
+      addTextLine("Resumen operativo", margin, 13, "F2", 18);
+      addTextLine(`Fecha de reporte: ${formatEsDate(new Date())}`, margin, 9, "F1", 13);
+      addTextLine(`Estado general: ${state}`, margin, 9, "F2", 13);
+      addTextLine(`Componentes registrados: ${rows.length} | Operativos: ${ok} | Alertas: ${alert} | Criticos: ${critical}`, margin, 9, "F1", 13);
+      addTextLine(`TBO asignado: ${this.formatMetric(assigned)} h | Consumido: ${this.formatMetric(consumed)} h | Remanente: ${this.formatMetric(remaining)} h`, margin, 9, "F1", 13);
+      addTextLine(`Proximo vencimiento: ${firstDue ? `${firstDue.row.component || "Componente"} (${firstDue.row.due})` : "--"}`, margin, 9, "F1", 16);
+      addWrapped("Notas", aircraft.notes, margin, 110, 9);
+      y -= 6;
+
+      addTextLine("Componentes", margin, 13, "F2", 18);
+      const columns = [
+        { label: "#", x: margin, width: 20 },
+        { label: "Componente", x: margin + 22, width: 132 },
+        { label: "Serie", x: margin + 158, width: 108 },
+        { label: "Taller", x: margin + 270, width: 96 },
+        { label: "Overhaul", x: margin + 370, width: 68 },
+        { label: "TBO Asig.", x: margin + 442, width: 58 },
+        { label: "TBO Cons.", x: margin + 504, width: 58 },
+        { label: "Rem.", x: margin + 566, width: 54 },
+        { label: "Vence", x: margin + 624, width: 66 },
+        { label: "Estado", x: margin + 694, width: contentWidth - 694 }
+      ];
+
+      const addTableHeader = () => {
+        ensureSpace(28);
+        line(margin, y + 7, pageWidth - margin, y + 7);
+        columns.forEach((column) => text(column.label, column.x, y, 8, "F2"));
+        y -= 12;
+        line(margin, y + 5, pageWidth - margin, y + 5);
+      };
+
+      addTableHeader();
+      if (rows.length === 0) {
+        addTextLine("No hay componentes registrados para esta aeronave.", margin, 9, "F1", 13);
+      }
+
+      rows.forEach((row, index) => {
+        ensureSpace(26);
+        if (y > pageHeight - margin - 10) {
+          addTableHeader();
+        }
+        const values = [
+          String(index + 1),
+          row.component || "--",
+          row.series || "--",
+          row.workshop || "--",
+          row.overhaul || "--",
+          row.assignedTboHours || row.assigned || "--",
+          row.consumedTboHours || row.consumed || "--",
+          row.remainingTboHours || row.remaining || "--",
+          row.due || "--",
+          this.getStatus(row)
+        ];
+        columns.forEach((column, columnIndex) => {
+          const maxLength = Math.max(4, Math.floor(column.width / 5));
+          text(wrapPdfText(values[columnIndex], maxLength)[0], column.x, y, 7.6, columnIndex === 9 ? "F2" : "F1");
+        });
+        y -= 12;
+        if (row.notes) {
+          wrapPdfText(`Nota: ${row.notes}`, 125).slice(0, 2).forEach((noteLine) => {
+            ensureSpace(12);
+            text(noteLine, margin + 22, y, 7.2, "F1");
+            y -= 10;
+          });
+        }
+        line(margin, y + 5, pageWidth - margin, y + 5);
+      });
+
+      pages.push(commands.join("\n"));
+
+      const objects = [];
+      const addObject = (body) => {
+        objects.push(body);
+        return objects.length;
+      };
+      const fontRegularId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+      const fontBoldId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+      const pageIds = [];
+      const contentIds = pages.map((page) => addObject(`<< /Length ${page.length} >>\nstream\n${page}\nendstream`));
+      const pagesId = objects.length + pages.length + 1;
+
+      contentIds.forEach((contentId) => {
+        const pageId = addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontRegularId} 0 R /F2 ${fontBoldId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+        pageIds.push(pageId);
+      });
+
+      addObject(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`);
+      const catalogId = addObject(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+      let pdf = "%PDF-1.4\n";
+      const offsets = [0];
+      objects.forEach((body, index) => {
+        offsets.push(pdf.length);
+        pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+      });
+      const xrefOffset = pdf.length;
+      pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+      offsets.slice(1).forEach((offset) => {
+        pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+      });
+      pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+      return pdf;
     },
 
     pct(value) {

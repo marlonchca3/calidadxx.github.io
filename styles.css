@@ -135,6 +135,10 @@ body.auth-locked {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .login-btn.primary {
@@ -321,6 +325,22 @@ body.auth-locked {
   flex: 0 0 auto;
 }
 
+.menu-icon img,
+.kpi-icon img,
+.btn-icon,
+.chip-icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(73%) sepia(27%) saturate(638%) hue-rotate(177deg) brightness(91%) contrast(91%);
+}
+
+.menu-icon img {
+  width: 20px;
+  height: 20px;
+}
+
 .sidebar-collapsed .menu-icon {
   font-size: 18px;
 }
@@ -471,6 +491,12 @@ body.auth-locked {
   white-space: nowrap;
 }
 
+.chip-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
 .text-size-btn {
   cursor: pointer;
   font-weight: 800;
@@ -571,8 +597,10 @@ body.auth-locked {
   font-size: 12px;
   min-height: 34px;
   min-width: 74px;
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   padding: 7px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -590,6 +618,10 @@ body.auth-locked {
   font-weight: 700;
   padding: 7px 11px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
 }
 
 .auth-btn:hover,
@@ -782,6 +814,11 @@ body.auth-locked {
   line-height: 1;
 }
 
+.kpi-icon img {
+  width: 19px;
+  height: 19px;
+}
+
 .kpi-value {
   margin: 7px 0 2px;
   font-size: clamp(32px, 3vw, 38px);
@@ -909,6 +946,21 @@ body.auth-locked {
   font-size: 18px;
   font-family: Rajdhani, sans-serif;
   text-transform: uppercase;
+}
+
+.icon-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.icon-heading img {
+  display: block;
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(73%) sepia(27%) saturate(638%) hue-rotate(177deg) brightness(91%) contrast(91%);
+  flex: 0 0 auto;
 }
 
 .panel-sub {
@@ -1299,6 +1351,20 @@ body.auth-locked {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.btn-icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.danger-btn .btn-icon {
+  filter: brightness(0) saturate(100%) invert(88%) sepia(18%) saturate(786%) hue-rotate(303deg) brightness(106%) contrast(102%);
 }
 
 .danger-btn {
@@ -1574,6 +1640,12 @@ th {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.aircraft-download-btn {
+  width: 36px;
+  min-width: 36px;
+  padding-inline: 0;
 }
 
 .aircraft-form {
