@@ -58,20 +58,47 @@ body.auth-locked {
 }
 
 .login-screen {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  overflow: hidden;
+  background: #04132b url("./src/foto/foto1.png") center 35% / cover no-repeat;
+}
+
+.login-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: inherit;
+  transform: scale(1.02);
+}
+
+.login-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(2, 10, 28, 0.68), rgba(2, 10, 28, 0.28) 55%, rgba(2, 10, 28, 0.5));
 }
 
 .login-card {
-  width: min(420px, 100%);
+  position: relative;
+  z-index: 1;
+  width: min(420px, calc(100vw - 48px));
+  max-height: calc(100svh - 48px);
+  overflow-y: auto;
   display: grid;
   gap: 10px;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
-  background: rgba(7, 21, 45, 0.92);
-  box-shadow: var(--shadow);
+  background: rgba(4, 17, 40, 0.88);
+  box-shadow: 0 18px 52px rgba(0, 5, 18, 0.48);
+  backdrop-filter: blur(8px);
   padding: 22px;
 }
 
@@ -1730,12 +1757,15 @@ footer {
 
 @media (max-width: 760px) {
   .login-screen {
-    align-items: start;
-    padding: 14px;
+    align-items: center;
+    padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    background-position: center 28%;
   }
 
   .login-card {
-    margin-top: 8vh;
+    width: min(420px, calc(100vw - 28px));
+    max-height: calc(100svh - 28px);
+    margin-top: 0;
     padding: 18px;
   }
 
@@ -2079,11 +2109,12 @@ footer {
 
 @media (max-width: 420px) {
   .login-screen {
-    padding: 10px;
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
 
   .login-card {
-    margin-top: 4vh;
+    width: min(420px, calc(100vw - 20px));
+    max-height: calc(100svh - 20px);
     padding: 16px;
   }
 
