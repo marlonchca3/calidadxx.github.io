@@ -393,6 +393,9 @@
                     <th>Consumido TSN años</th>
                     <th>Remanente TBO (hrs)</th>
                     <th>Remanente TBO (años)</th>
+                    <th>Remanente TSN (hrs)</th>
+                    <th>Remanente TSN (años)</th>
+                    <th>Notas</th>
                     <th>Vencimiento</th>
                     <th>Estado</th>
                     <th>Accion</th>
@@ -419,20 +422,23 @@
                         ⋮⋮
                       </button>
                     </td>
-                    <td><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="persistFleet"></div></td>
-                    <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
-                    <td><input v-model="row.assignedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
-                    <td><input v-model="row.assignedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
-                    <td><input v-model="row.consumedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="persistFleet"></td>
+                    <td><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Componente')"></div></td>
+                    <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Serie')"></td>
+                    <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Taller')"></td>
+                    <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @input="updateAllDerived(row)" @change="saveRowFieldChange(row, 'Ultimo overhaul', 'all')"></td>
+                    <td><input v-model="row.assignedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Asignado TBO horas', 'tbo')"></td>
+                    <td><input v-model="row.assignedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Asignado TBO años', 'tbo')"></td>
+                    <td><input v-model="row.consumedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Consumido TBO horas', 'tbo')"></td>
                     <td><input v-model="row.consumedTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
-                    <td><input v-model="row.assignedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.assignedTsnYears" class="cell-input numeric-input" :disabled="!isOwner" @change="persistFleet"></td>
-                    <td><input v-model="row.consumedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @change="persistFleet"></td>
+                    <td><input v-model="row.assignedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Asignado TSN horas', 'tsn')"></td>
+                    <td><input v-model="row.assignedTsnYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Asignado TSN años', 'tsn')"></td>
+                    <td><input v-model="row.consumedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Consumido TSN horas', 'tsn')"></td>
                     <td><input v-model="row.consumedTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTboHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.remainingTsnHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.remainingTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><textarea v-model="row.notes" class="cell-input notes-input" :disabled="!isOwner" maxlength="360" placeholder="Notas del componente" @change="saveRowFieldChange(row, 'Notas')"></textarea></td>
                     <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
                     <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
                     <td>
@@ -493,9 +499,22 @@
 
           <section v-if="activeView === 'historial'" id="historial" class="panel table-panel view">
             <div class="table-title">
-              <h2>Historial de Overhaul</h2>
-              <p class="panel-sub">Registro por componente y taller</p>
+              <div>
+                <h2>Historial</h2>
+                <p class="panel-sub">Ultimos 20 cambios del sistema y registro de overhaul</p>
+              </div>
             </div>
+            <div class="change-log">
+              <article v-for="change in recentChanges" :key="change.id" class="change-item">
+                <div>
+                  <strong>{{ change.action }}</strong>
+                  <p>{{ change.detail }}</p>
+                </div>
+                <span>{{ formatChangeDate(change.timestamp) }}</span>
+              </article>
+              <p v-if="recentChanges.length === 0" class="empty-note">Aun no hay cambios registrados.</p>
+            </div>
+            <div class="history-section-title">Historial de Overhaul</div>
             <div class="table-wrap">
               <table class="history-table">
                 <thead>
@@ -539,6 +558,7 @@ const DB_STORAGE_KEY = "sr_aero_fleet_v1";
 const DB_META_KEY = "sr_aero_fleet_meta_v1";
 const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
+const MAX_CHANGE_LOG = 20;
 const TODAY = new Date();
 TODAY.setHours(0, 0, 0, 0);
 const OWNER_EMAIL = "calidad@divmaaer.com";
@@ -590,6 +610,7 @@ function writeFleetMeta(updatedAt) {
 function createDefaultFleet() {
   return {
     selectedId: "pnp-501",
+    changes: [],
     aircrafts: [
       { id: "pnp-501", code: "PNP-501", name: "Mi-17 MTV-1", rows: cloneData(defaultRowsPnp501).map(normalizeRow) },
       { id: "pnp-506", code: "PNP-506", name: "Mi-171", rows: [] }
@@ -633,6 +654,8 @@ function normalizeRow(row) {
   const assignedTsnHours = String(row.assignedTsnHours ?? "");
   const assignedTsnYears = String(row.assignedTsnYears ?? "");
   const consumedTsnHours = String(row.consumedTsnHours ?? "");
+  const remainingTsnHours = formatNumberValue(parseNumeric(assignedTsnHours) - parseNumeric(consumedTsnHours));
+  const remainingTsnYears = calculateDueDate(row.overhaul, assignedTsnYears) || String(row.remainingTsnYears || "");
   const remainingTboHours = formatNumberValue(parseNumeric(assignedTboHours) - parseNumeric(consumedTboHours));
   const due = calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
   const remainingTboYears = due;
@@ -655,8 +678,30 @@ function normalizeRow(row) {
     consumedTsnYears: consumedDate,
     remainingTboHours,
     remainingTboYears,
+    remainingTsnHours,
+    remainingTsnYears,
+    notes: String(row.notes || ""),
     due
   };
+}
+
+function normalizeChanges(changes) {
+  if (!Array.isArray(changes)) {
+    return [];
+  }
+
+  return changes
+    .map((change, index) => ({
+      id: String(change.id || `${change.timestamp || Date.now()}-${index}`),
+      timestamp: Number(change.timestamp || 0),
+      action: String(change.action || "Cambio registrado"),
+      detail: String(change.detail || ""),
+      aircraftCode: String(change.aircraftCode || ""),
+      user: String(change.user || "")
+    }))
+    .filter((change) => change.timestamp > 0)
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, MAX_CHANGE_LOG);
 }
 
 function loadFleet() {
@@ -673,6 +718,7 @@ function loadFleet() {
     if (!parsed.selectedId || !parsed.aircrafts.find((aircraft) => aircraft.id === parsed.selectedId)) {
       parsed.selectedId = parsed.aircrafts[0].id;
     }
+    parsed.changes = normalizeChanges(parsed.changes);
     parsed.aircrafts = parsed.aircrafts.map((aircraft) => ({
       ...aircraft,
       rows: Array.isArray(aircraft.rows) ? aircraft.rows.map(normalizeRow) : []
@@ -1082,6 +1128,10 @@ export default {
       return rows.length ? rows : [{ key: "empty", component: "Sin alertas activas", status: "OK", className: "ok" }];
     },
 
+    recentChanges() {
+      return normalizeChanges(this.fleet.changes);
+    },
+
     historyRows() {
       return this.currentRows.map((row, index) => {
         const status = this.getStatus(row);
@@ -1172,6 +1222,38 @@ export default {
       return Number.isFinite(parsed) ? parsed : 0;
     },
 
+    recordSystemChange(action, detail) {
+      const timestamp = Date.now();
+      const aircraftCode = this.currentAircraft ? this.currentAircraft.code : "";
+      const user = this.currentUser && this.currentUser.email ? this.currentUser.email : "local";
+      const changes = Array.isArray(this.fleet.changes) ? this.fleet.changes : [];
+      this.fleet.changes = [
+        {
+          id: `${timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+          timestamp,
+          action,
+          detail,
+          aircraftCode,
+          user
+        },
+        ...changes
+      ].slice(0, MAX_CHANGE_LOG);
+    },
+
+    formatChangeDate(timestamp) {
+      if (!timestamp) {
+        return "--";
+      }
+
+      return new Intl.DateTimeFormat("es-PE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(timestamp));
+    },
+
     rowAssignedHours(row) {
       return parseNumeric(row.assignedTboHours ?? row.assigned);
     },
@@ -1198,6 +1280,33 @@ export default {
       if (due) {
         row.due = due;
       }
+    },
+
+    updateTsnDerived(row) {
+      const consumedDate = currentConsumedDate();
+      const remainingHours = parseNumeric(row.assignedTsnHours) - parseNumeric(row.consumedTsnHours);
+      row.consumedTsnYears = consumedDate;
+      row.remainingTsnHours = formatNumberValue(remainingHours);
+      row.remainingTsnYears = calculateDueDate(row.overhaul, row.assignedTsnYears) || "";
+    },
+
+    updateAllDerived(row) {
+      this.updateTboDerived(row);
+      this.updateTsnDerived(row);
+    },
+
+    async saveRowFieldChange(row, fieldLabel, derivedGroup = "") {
+      if (derivedGroup === "tbo") {
+        this.updateTboDerived(row);
+      }
+      if (derivedGroup === "tsn") {
+        this.updateTsnDerived(row);
+      }
+      if (derivedGroup === "all") {
+        this.updateAllDerived(row);
+      }
+      this.recordSystemChange("Componente actualizado", `${fieldLabel}: ${row.component || "Sin nombre"}`);
+      await this.persistFleet();
     },
 
     updateCloudStatus(message, isError = false, detail = "") {
@@ -1230,6 +1339,7 @@ export default {
 
       return {
         selectedId,
+        changes: normalizeChanges(value.changes),
         aircrafts: value.aircrafts.map((aircraft) => ({
           id: String(aircraft.id || ""),
           code: String(aircraft.code || ""),
@@ -1537,6 +1647,7 @@ export default {
       aircraft.name = name;
       aircraft.notes = notes;
       this.cancelAircraftEdit();
+      this.recordSystemChange("Aeronave actualizada", `${code} - ${name}`);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("La aeronave se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -1575,6 +1686,7 @@ export default {
       aircrafts.splice(targetIndex, 0, draggedAircraft);
       this.fleet.aircrafts = aircrafts;
       this.finishAircraftDrag();
+      this.recordSystemChange("Aeronaves reordenadas", `${draggedAircraft.code} movida en la lista`);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("El orden se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -1613,6 +1725,7 @@ export default {
       this.newAircraft.code = "";
       this.newAircraft.name = "";
       this.newAircraft.notes = "";
+      this.recordSystemChange("Aeronave creada", `${code} - ${name}`);
       const saved = await this.persistFleet();
       this.$nextTick(() => window.scrollTo(scrollX, scrollY));
       if (!saved) {
@@ -1646,6 +1759,7 @@ export default {
         this.fleet.selectedId = this.fleet.aircrafts[0] ? this.fleet.aircrafts[0].id : "";
       }
 
+      this.recordSystemChange("Aeronave eliminada", `${aircraft.code} - ${aircraft.name}`);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("La aeronave se elimino localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -1679,8 +1793,12 @@ export default {
         consumedTsnYears: currentConsumedDate(),
         remainingTboHours: "0",
         remainingTboYears: "0",
+        remainingTsnHours: "0",
+        remainingTsnYears: calculateDueDate(formatEsDate(TODAY), "1"),
+        notes: "",
         due: calculateDueDate(formatEsDate(TODAY), "1")
       }));
+      this.recordSystemChange("Componente agregado", `${this.currentAircraft.code}: Nuevo componente`);
       await this.persistFleet();
     },
 
@@ -1715,6 +1833,7 @@ export default {
       rows.splice(targetIndex, 0, draggedRow);
       this.currentAircraft.rows = rows;
       this.finishRowDrag();
+      this.recordSystemChange("Componentes reordenados", `${draggedRow.component || "Sin nombre"} movido en ${this.currentAircraft.code}`);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("El orden se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -1735,6 +1854,7 @@ export default {
         return;
       }
       this.currentAircraft.rows = this.currentAircraft.id === "pnp-501" ? cloneData(defaultRowsPnp501).map(normalizeRow) : [];
+      this.recordSystemChange("Base de datos restaurada", `${this.currentAircraft.code}: datos restaurados`);
       await this.persistFleet();
     },
 
@@ -1755,6 +1875,7 @@ export default {
       }
 
       this.currentAircraft.rows.splice(rowIndex, 1);
+      this.recordSystemChange("Componente eliminado", `${this.currentAircraft.code}: ${componentName}`);
       await this.persistFleet();
     },
 
