@@ -1,6 +1,8 @@
 <template>
   <div class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'text-large': textSizeLarge }">
     <section v-if="!isAuthenticated" class="login-screen">
+      <canvas id="three-bg" ref="threeBg" aria-hidden="true"></canvas>
+
       <form class="login-card" @submit.prevent="signInWithEmail">
         <div class="login-brand">
           <p>DIVMAAER</p>
@@ -567,6 +569,7 @@
 </template>
 
 <script>
+import * as THREE from "three";
 import { hasStoredFleet } from "./syncRules.js";
 import addIcon from "./icons/agregar.svg";
 import aircraftsIcon from "./icons/aeronaves.svg";
@@ -895,6 +898,7 @@ export default {
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
       loginEmail: "",
       loginPassword: "",
+      loginThreeCleanup: null,
       syncSource: "local",
       mobileMenuOpen: false,
       sidebarCollapsed: false,
@@ -1243,12 +1247,25 @@ export default {
     }
   },
 
+  watch: {
+    isAuthenticated(authenticated) {
+      if (authenticated) {
+        this.destroyLoginThreeBackground();
+        return;
+      }
+
+      this.$nextTick(() => this.initLoginThreeBackground());
+    }
+  },
+
   mounted() {
     this.initAuth();
+    this.$nextTick(() => this.initLoginThreeBackground());
     window.addEventListener("resize", this.handleResize);
   },
 
   beforeUnmount() {
+    this.destroyLoginThreeBackground();
     window.removeEventListener("resize", this.handleResize);
     if (this.firestoreUnsubscribe) {
       this.firestoreUnsubscribe();
@@ -1256,6 +1273,137 @@ export default {
   },
 
   methods: {
+    initLoginThreeBackground() {
+      if (this.loginThreeCleanup || this.isAuthenticated || !this.$refs.threeBg) {
+        return;
+      }
+
+      const canvas = this.$refs.threeBg;
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: "high-performance"
+      });
+      renderer.setClearColor(0x000000, 0);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+      camera.position.set(0, 0.4, 8);
+
+      const group = new THREE.Group();
+      scene.add(group);
+
+      const starCount = window.innerWidth < 768 ? 120 : 220;
+      const positions = new Float32Array(starCount * 3);
+      const colors = new Float32Array(starCount * 3);
+      const colorA = new THREE.Color("#6fb4ff");
+      const colorB = new THREE.Color("#22d3ee");
+
+      for (let index = 0; index < starCount; index += 1) {
+        const i = index * 3;
+        positions[i] = (Math.random() - 0.5) * 15;
+        positions[i + 1] = (Math.random() - 0.5) * 9;
+        positions[i + 2] = (Math.random() - 0.5) * 10;
+
+        const color = colorA.clone().lerp(colorB, Math.random());
+        colors[i] = color.r;
+        colors[i + 1] = color.g;
+        colors[i + 2] = color.b;
+      }
+
+      const starsGeometry = new THREE.BufferGeometry();
+      starsGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      starsGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      const stars = new THREE.Points(
+        starsGeometry,
+        new THREE.PointsMaterial({
+          size: 0.035,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.72,
+          depthWrite: false
+        })
+      );
+      group.add(stars);
+
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: 0x4f9cff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.24
+      });
+      const accentMaterial = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.18
+      });
+
+      const radarRing = new THREE.Mesh(new THREE.TorusGeometry(2.25, 0.012, 8, 96), ringMaterial);
+      radarRing.rotation.x = Math.PI / 2.6;
+      radarRing.position.set(-2.2, -0.4, -1.6);
+      group.add(radarRing);
+
+      const orbitRing = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.01, 8, 80), accentMaterial);
+      orbitRing.rotation.x = Math.PI / 2;
+      orbitRing.rotation.y = Math.PI / 5;
+      orbitRing.position.set(2.6, 0.45, -0.9);
+      group.add(orbitRing);
+
+      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72, 1), ringMaterial);
+      core.position.set(2.6, 0.45, -0.9);
+      group.add(core);
+
+      const resize = () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / Math.max(height, 1);
+        camera.updateProjectionMatrix();
+      };
+
+      let frameId = 0;
+      const clock = new THREE.Clock();
+      const animate = () => {
+        const elapsed = clock.getElapsedTime();
+        stars.rotation.y = elapsed * 0.035;
+        stars.rotation.x = Math.sin(elapsed * 0.28) * 0.06;
+        radarRing.rotation.z = elapsed * 0.18;
+        orbitRing.rotation.z = -elapsed * 0.34;
+        core.rotation.x = elapsed * 0.28;
+        core.rotation.y = elapsed * 0.42;
+        group.position.y = Math.sin(elapsed * 0.7) * 0.08;
+        renderer.render(scene, camera);
+        frameId = window.requestAnimationFrame(animate);
+      };
+
+      resize();
+      window.addEventListener("resize", resize);
+      animate();
+
+      this.loginThreeCleanup = () => {
+        window.cancelAnimationFrame(frameId);
+        window.removeEventListener("resize", resize);
+        starsGeometry.dispose();
+        radarRing.geometry.dispose();
+        orbitRing.geometry.dispose();
+        core.geometry.dispose();
+        stars.material.dispose();
+        ringMaterial.dispose();
+        accentMaterial.dispose();
+        renderer.dispose();
+        this.loginThreeCleanup = null;
+      };
+    },
+
+    destroyLoginThreeBackground() {
+      if (this.loginThreeCleanup) {
+        this.loginThreeCleanup();
+      }
+    },
+
     componentCategory(row) {
       const name = `${row.component || ""} ${row.series || ""}`.toLowerCase();
       if (/motor|tv3|ai-9|apu/.test(name)) {
