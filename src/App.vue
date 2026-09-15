@@ -21,15 +21,36 @@
         >
 
         <label for="login-password">Contrasena</label>
-        <input
-          id="login-password"
-          v-model="loginPassword"
-          class="login-input"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Contrasena"
-          :disabled="authBusy"
-        >
+        <div class="password-field">
+          <input
+            id="login-password"
+            v-model="loginPassword"
+            class="login-input"
+            :type="passwordVisible ? 'text' : 'password'"
+            autocomplete="current-password"
+            placeholder="Contrasena"
+            :disabled="authBusy"
+          >
+          <button
+            class="password-eye-btn"
+            type="button"
+            aria-label="Ver contrasena mientras se presiona"
+            title="Ver contrasena"
+            :disabled="authBusy"
+            @mousedown.prevent="showPassword"
+            @mouseup="hidePassword"
+            @mouseleave="hidePassword"
+            @touchstart.prevent="showPassword"
+            @touchend="hidePassword"
+            @touchcancel="hidePassword"
+            @keydown.space.prevent="showPassword"
+            @keyup.space="hidePassword"
+            @keydown.enter.prevent="showPassword"
+            @keyup.enter="hidePassword"
+          >
+            <img class="btn-icon" :src="icons.eye" alt="" aria-hidden="true">
+          </button>
+        </div>
 
         <div class="login-actions">
           <button class="login-btn primary" type="submit" :disabled="authBusy || !authReady">
@@ -64,7 +85,7 @@
           :title="sidebarCollapsed ? 'Desplegar menu' : 'Ocultar menu'"
           @click="sidebarCollapsed = !sidebarCollapsed"
         >
-          {{ sidebarCollapsed ? "›" : "‹" }}
+          <img class="btn-icon" :src="sidebarCollapsed ? icons.expand : icons.collapse" alt="" aria-hidden="true">
         </button>
 
         <nav id="sidebar-menu" class="menu">
@@ -93,7 +114,7 @@
         <header class="topbar">
           <div class="topbar-left">
             <button class="mobile-menu-btn" type="button" aria-label="Abrir menu" @click="setMobileMenuOpen(!mobileMenuOpen)">
-              ☰
+              <img class="btn-icon" :src="icons.menu" alt="" aria-hidden="true">
             </button>
             <div class="topbar-brand">
               <p class="topbar-kicker">CONTROL DE CALIDAD</p>
@@ -165,7 +186,7 @@
                         <button class="table-btn" type="button" @click="cancelAircraftEdit">Cancelar</button>
                       </template>
                       <template v-else>
-                        <button class="table-btn" type="button" @click="openAircraft(aircraft.id)"><img class="btn-icon" :src="icons.aircrafts" alt="" aria-hidden="true">Abrir</button>
+                        <button class="table-btn" type="button" @click="openAircraft(aircraft.id)"><img class="btn-icon" :src="icons.open" alt="" aria-hidden="true">Abrir</button>
                         <button class="table-btn" type="button" :disabled="!isOwner" @click="startAircraftEdit(aircraft)"><img class="btn-icon" :src="icons.edit" alt="" aria-hidden="true">Editar</button>
                         <button
                           class="table-btn aircraft-download-btn"
@@ -383,7 +404,7 @@
               <h2>Base de Datos de Componentes</h2>
               <div class="table-tools">
                 <button class="table-btn" type="button" :disabled="!isOwner" @click="addRow"><img class="btn-icon" :src="icons.add" alt="" aria-hidden="true">Agregar componente</button>
-                <button class="table-btn" type="button" :disabled="!isOwner" @click="resetDb"><img class="btn-icon" :src="icons.database" alt="" aria-hidden="true">Restaurar datos</button>
+                <button class="table-btn" type="button" :disabled="!isOwner" @click="resetDb"><img class="btn-icon" :src="icons.restore" alt="" aria-hidden="true">Restaurar datos</button>
               </div>
             </div>
 
@@ -398,6 +419,7 @@
                     <th>Orden</th>
                     <th>Componente</th>
                     <th>Serie</th>
+                    <th>Fecha fabricacion</th>
                     <th>Taller</th>
                     <th>Ultimo Overhaul</th>
                     <th>Asignado TBO (hrs)</th>
@@ -441,6 +463,7 @@
                     </td>
                     <td><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Componente')"></div></td>
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Serie')"></td>
+                    <td><input v-model="row.manufactureDate" class="cell-input" :disabled="!isOwner" placeholder="dd/mm/aaaa" @change="saveRowFieldChange(row, 'Fecha fabricacion')"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Taller')"></td>
                     <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @input="updateAllDerived(row)" @change="saveRowFieldChange(row, 'Ultimo overhaul', 'all')"></td>
                     <td><input v-model="row.assignedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Asignado TBO horas', 'tbo')"></td>
@@ -471,32 +494,32 @@
             <div class="stats-row">
               <article class="mini">
                 <p>Overhaul Requerido</p>
-                <b style="color: var(--danger)">{{ metrics.critical }}</b>
+                <b style="color: var(--danger)">{{ fleetAlertMetrics.critical }}</b>
               </article>
               <article class="mini">
                 <p>Alertas Preventivas</p>
-                <b style="color: var(--warn)">{{ metrics.alert }}</b>
+                <b style="color: var(--warn)">{{ fleetAlertMetrics.alert }}</b>
               </article>
               <article class="mini">
                 <p>Proximos 90 dias</p>
-                <b style="color: var(--warn)">{{ metrics.dueIn90 }}</b>
+                <b style="color: var(--warn)">{{ fleetAlertMetrics.dueIn90 }}</b>
               </article>
               <article class="mini">
                 <p>Proximos 180 dias</p>
-                <b style="color: #ffd58f">{{ metrics.dueIn180 }}</b>
+                <b style="color: #ffd58f">{{ fleetAlertMetrics.dueIn180 }}</b>
               </article>
               <article class="mini">
                 <p>Riesgo Global</p>
-                <b :style="{ color: riskLabel.color }">{{ metrics.risk }}%</b>
+                <b :style="{ color: fleetRiskLabel.color }">{{ fleetAlertMetrics.risk }}%</b>
               </article>
             </div>
 
             <article class="panel">
               <h2>Componentes en Alerta</h2>
-              <p class="panel-sub">Elementos con vencimiento cercano o recursos consumidos</p>
+              <p class="panel-sub">Alertas consolidadas de todas las aeronaves</p>
               <ul class="events">
-                <li v-for="alert in alertRows" :key="alert.key">
-                  <span>{{ alert.component }}</span>
+                <li v-for="alert in allAlertRows" :key="alert.key">
+                  <span><strong class="event-aircraft">{{ alert.aircraftCode }}</strong>{{ alert.component }}</span>
                   <span class="date" :class="alert.className">{{ alert.status }}</span>
                 </li>
               </ul>
@@ -524,7 +547,7 @@
             <div class="change-log">
               <article v-for="change in recentChanges" :key="change.id" class="change-item">
                 <div>
-                  <strong>{{ change.action }}</strong>
+                  <strong>{{ change.action }} <span v-if="change.aircraftCode" class="change-aircraft">{{ change.aircraftCode }}</span></strong>
                   <p>{{ change.detail }}</p>
                 </div>
                 <span>{{ formatChangeDate(change.timestamp) }}</span>
@@ -538,6 +561,7 @@
                   <tr>
                     <th>Componente</th>
                     <th>Serie</th>
+                    <th>Fecha fabricacion</th>
                     <th>Taller</th>
                     <th>Ultimo Overhaul</th>
                     <th>Vencimiento</th>
@@ -548,10 +572,49 @@
                   <tr v-for="entry in historyRows" :key="entry.key">
                     <td>{{ entry.component }}</td>
                     <td>{{ entry.series }}</td>
+                    <td>{{ entry.manufactureDate }}</td>
                     <td>{{ entry.workshop }}</td>
                     <td>{{ entry.overhaul }}</td>
                     <td>{{ entry.due }}</td>
                     <td><span class="status" :class="entry.statusClass">{{ entry.status }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section v-if="activeView === 'papelera'" id="papelera" class="panel table-panel view">
+            <div class="table-title">
+              <div>
+                <h2>Papelera</h2>
+                <p class="panel-sub">Elementos eliminados, disponibles por 30 dias</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="trash-table">
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Aeronave</th>
+                    <th>Elemento</th>
+                    <th>Eliminado</th>
+                    <th>Expira</th>
+                    <th>Accion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in trashRows" :key="item.id">
+                    <td>{{ item.typeLabel }}</td>
+                    <td>{{ item.aircraftCode }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ formatChangeDate(item.deletedAt) }}</td>
+                    <td>{{ formatChangeDate(item.expiresAt) }}</td>
+                    <td>
+                      <button class="table-btn" type="button" :disabled="!isOwner" @click="restoreTrashItem(item.id)"><img class="btn-icon" :src="icons.restore" alt="" aria-hidden="true">Restaurar</button>
+                    </td>
+                  </tr>
+                  <tr v-if="trashRows.length === 0">
+                    <td colspan="6" class="empty-cell">La papelera esta vacia.</td>
                   </tr>
                 </tbody>
               </table>
@@ -572,18 +635,24 @@
 import * as THREE from "three";
 import { hasStoredFleet } from "./syncRules.js";
 import addIcon from "./icons/agregar.svg";
+import openIcon from "./icons/abrir.svg";
 import aircraftsIcon from "./icons/aeronaves.svg";
 import alertsIcon from "./icons/alertas.svg";
 import calendarIcon from "./icons/calendario.svg";
+import collapseIcon from "./icons/contraer.svg";
 import componentsIcon from "./icons/componentes.svg";
 import dashboardIcon from "./icons/dashboard.svg";
 import databaseIcon from "./icons/base-datos.svg";
 import deleteIcon from "./icons/eliminar.svg";
 import downloadIcon from "./icons/descargar.svg";
 import editIcon from "./icons/editar.svg";
+import expandIcon from "./icons/desplegar.svg";
 import historyIcon from "./icons/historial.svg";
+import eyeIcon from "./icons/ojo.svg";
 import loginIcon from "./icons/iniciar-sesion.svg";
+import menuIcon from "./icons/menu.svg";
 import overhaulIcon from "./icons/overhaul.svg";
+import restoreIcon from "./icons/restaurar.svg";
 import saveIcon from "./icons/guardar.svg";
 import serviceTimeIcon from "./icons/tiempo-servicio.svg";
 import signOutIcon from "./icons/cerrar-sesion.svg";
@@ -596,6 +665,8 @@ const DB_META_KEY = "sr_aero_fleet_meta_v1";
 const FIRESTORE_COLLECTION = "dashboards";
 const FIRESTORE_DOCUMENT = "main";
 const MAX_CHANGE_LOG = 20;
+const TRASH_RETENTION_DAYS = 30;
+const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 86400000;
 const TODAY = new Date();
 TODAY.setHours(0, 0, 0, 0);
 const OWNER_EMAIL = "calidad@divmaaer.com";
@@ -648,6 +719,7 @@ function createDefaultFleet() {
   return {
     selectedId: "pnp-501",
     changes: [],
+    trash: [],
     aircrafts: [
       { id: "pnp-501", code: "PNP-501", name: "Mi-17 MTV-1", rows: cloneData(defaultRowsPnp501).map(normalizeRow) },
       { id: "pnp-506", code: "PNP-506", name: "Mi-171", rows: [] }
@@ -700,6 +772,7 @@ function normalizeRow(row) {
   return {
     component: String(row.component || ""),
     series: String(row.series || ""),
+    manufactureDate: String(row.manufactureDate || row.fabricationDate || row.fechaFabricacion || ""),
     workshop: String(row.workshop || ""),
     overhaul: String(row.overhaul || ""),
     assigned: assignedTboHours,
@@ -720,6 +793,32 @@ function normalizeRow(row) {
     notes: String(row.notes || ""),
     due
   };
+}
+
+function normalizeTrash(trash) {
+  if (!Array.isArray(trash)) {
+    return [];
+  }
+
+  const now = Date.now();
+  return trash
+    .map((item, index) => {
+      const deletedAt = Number(item.deletedAt || 0);
+      const expiresAt = Number(item.expiresAt || (deletedAt ? deletedAt + TRASH_RETENTION_MS : 0));
+      return {
+        id: String(item.id || `${deletedAt || now}-${index}`),
+        type: item.type === "aircraft" ? "aircraft" : "component",
+        aircraftId: String(item.aircraftId || ""),
+        aircraftCode: String(item.aircraftCode || ""),
+        aircraftName: String(item.aircraftName || ""),
+        name: String(item.name || ""),
+        deletedAt,
+        expiresAt,
+        data: item.data && typeof item.data === "object" ? cloneData(item.data) : null
+      };
+    })
+    .filter((item) => item.deletedAt > 0 && item.expiresAt > now && item.data)
+    .sort((a, b) => b.deletedAt - a.deletedAt);
 }
 
 function normalizeChanges(changes) {
@@ -756,6 +855,7 @@ function loadFleet() {
       parsed.selectedId = parsed.aircrafts[0].id;
     }
     parsed.changes = normalizeChanges(parsed.changes);
+    parsed.trash = normalizeTrash(parsed.trash);
     parsed.aircrafts = parsed.aircrafts.map((aircraft) => ({
       ...aircraft,
       rows: Array.isArray(aircraft.rows) ? aircraft.rows.map(normalizeRow) : []
@@ -828,6 +928,15 @@ function sanitizeFilename(value) {
   return filename || "aeronave";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function wrapPdfText(value, maxLength) {
   const words = sanitizePdfText(value).split(" ").filter(Boolean);
   const lines = [];
@@ -898,6 +1007,7 @@ export default {
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
       loginEmail: "",
       loginPassword: "",
+      passwordVisible: false,
       loginThreeCleanup: null,
       syncSource: "local",
       mobileMenuOpen: false,
@@ -905,9 +1015,11 @@ export default {
       textSizeLarge: false,
       icons: {
         add: addIcon,
+        open: openIcon,
         aircrafts: aircraftsIcon,
         alerts: alertsIcon,
         calendar: calendarIcon,
+        collapse: collapseIcon,
         components: componentsIcon,
         dashboard: dashboardIcon,
         database: databaseIcon,
@@ -915,9 +1027,13 @@ export default {
         download: downloadIcon,
         due: dueIcon,
         edit: editIcon,
+        expand: expandIcon,
+        eye: eyeIcon,
         history: historyIcon,
         login: loginIcon,
+        menu: menuIcon,
         overhaul: overhaulIcon,
+        restore: restoreIcon,
         save: saveIcon,
         serviceTime: serviceTimeIcon,
         signOut: signOutIcon,
@@ -936,7 +1052,8 @@ export default {
         { label: "Base de datos", target: "base-datos", icon: databaseIcon },
         { label: "Alertas", target: "alertas", icon: alertsIcon },
         { label: "Calendario", target: "calendario", icon: calendarIcon },
-        { label: "Historial", target: "historial", icon: historyIcon }
+        { label: "Historial", target: "historial", icon: historyIcon },
+        { label: "Papelera", target: "papelera", icon: deleteIcon }
       ]
     };
   },
@@ -1041,6 +1158,16 @@ export default {
         return { label: "Alto", color: "var(--danger)" };
       }
       if (this.metrics.risk >= 40) {
+        return { label: "Medio", color: "var(--warn)" };
+      }
+      return { label: "Bajo", color: "var(--ok)" };
+    },
+
+    fleetRiskLabel() {
+      if (this.fleetAlertMetrics.risk >= 70) {
+        return { label: "Alto", color: "var(--danger)" };
+      }
+      if (this.fleetAlertMetrics.risk >= 40) {
         return { label: "Medio", color: "var(--warn)" };
       }
       return { label: "Bajo", color: "var(--ok)" };
@@ -1226,6 +1353,50 @@ export default {
       return rows.length ? rows : [{ key: "empty", component: "Sin alertas activas", status: "OK", className: "ok" }];
     },
 
+    allAlertRows() {
+      const rows = this.fleet.aircrafts.flatMap((aircraft) => (
+        (Array.isArray(aircraft.rows) ? aircraft.rows : [])
+          .map((row, index) => {
+            const status = this.getStatus(row);
+            return {
+              key: `${aircraft.id}-${row.component}-${row.series}-${index}`,
+              aircraftCode: aircraft.code || "--",
+              component: row.component || "Sin nombre",
+              status,
+              className: status === "CRITICO" ? "danger" : "warn"
+            };
+          })
+          .filter((entry) => entry.status === "CRITICO" || entry.status === "ALERTA")
+      ));
+
+      return rows.length ? rows : [{ key: "empty", aircraftCode: "--", component: "Sin alertas activas", status: "OK", className: "ok" }];
+    },
+
+    fleetAlertMetrics() {
+      const rows = this.fleet.aircrafts.flatMap((aircraft) => Array.isArray(aircraft.rows) ? aircraft.rows : []);
+      const total = rows.length;
+      const critical = rows.filter((row) => this.getStatus(row) === "CRITICO").length;
+      const alert = rows.filter((row) => this.getStatus(row) === "ALERTA").length;
+      const dueIn90 = rows.filter((row) => {
+        const dueDate = parseEsDate(row.due);
+        if (!dueDate) {
+          return false;
+        }
+        const days = Math.floor((dueDate - TODAY) / 86400000);
+        return days >= 0 && days <= 90;
+      }).length;
+      const dueIn180 = rows.filter((row) => {
+        const dueDate = parseEsDate(row.due);
+        if (!dueDate) {
+          return false;
+        }
+        const days = Math.floor((dueDate - TODAY) / 86400000);
+        return days >= 0 && days <= 180;
+      }).length;
+      const risk = Math.round(((critical + alert * 0.5) / Math.max(total, 1)) * 100);
+      return { total, critical, alert, dueIn90, dueIn180, risk };
+    },
+
     recentChanges() {
       return normalizeChanges(this.fleet.changes);
     },
@@ -1237,6 +1408,7 @@ export default {
           key: `${row.component}-${row.series}-${index}`,
           component: row.component || "Sin nombre",
           series: row.series || "--",
+          manufactureDate: row.manufactureDate || "--",
           workshop: row.workshop || "--",
           overhaul: row.overhaul || "--",
           due: row.due || "--",
@@ -1244,6 +1416,13 @@ export default {
           statusClass: this.statusClass(row)
         };
       });
+    },
+
+    trashRows() {
+      return normalizeTrash(this.fleet.trash).map((item) => ({
+        ...item,
+        typeLabel: item.type === "aircraft" ? "Aeronave" : "Componente"
+      }));
     }
   },
 
@@ -1273,6 +1452,16 @@ export default {
   },
 
   methods: {
+    showPassword() {
+      if (!this.authBusy) {
+        this.passwordVisible = true;
+      }
+    },
+
+    hidePassword() {
+      this.passwordVisible = false;
+    },
+
     initLoginThreeBackground() {
       if (this.loginThreeCleanup || this.isAuthenticated || !this.$refs.threeBg) {
         return;
@@ -1538,6 +1727,7 @@ export default {
 
     async persistFleet() {
       const timestamp = Date.now();
+      this.fleet.trash = normalizeTrash(this.fleet.trash);
       localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(this.fleet));
       writeFleetMeta(timestamp);
       this.lastLocalWriteAt = timestamp;
@@ -1566,9 +1756,9 @@ export default {
       return Number.isFinite(parsed) ? parsed : 0;
     },
 
-    recordSystemChange(action, detail) {
+    recordSystemChange(action, detail, aircraftCodeOverride = "") {
       const timestamp = Date.now();
-      const aircraftCode = this.currentAircraft ? this.currentAircraft.code : "";
+      const aircraftCode = aircraftCodeOverride || (this.currentAircraft ? this.currentAircraft.code : "");
       const user = this.currentUser && this.currentUser.email ? this.currentUser.email : "local";
       const changes = Array.isArray(this.fleet.changes) ? this.fleet.changes : [];
       this.fleet.changes = [
@@ -1582,6 +1772,26 @@ export default {
         },
         ...changes
       ].slice(0, MAX_CHANGE_LOG);
+    },
+
+    addToTrash(type, data, aircraft = null, name = "") {
+      const timestamp = Date.now();
+      const sourceAircraft = aircraft || this.currentAircraft || {};
+      const trash = Array.isArray(this.fleet.trash) ? this.fleet.trash : [];
+      this.fleet.trash = normalizeTrash([
+        {
+          id: `${type}-${timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+          type,
+          aircraftId: sourceAircraft.id || "",
+          aircraftCode: sourceAircraft.code || "",
+          aircraftName: sourceAircraft.name || "",
+          name,
+          deletedAt: timestamp,
+          expiresAt: timestamp + TRASH_RETENTION_MS,
+          data: cloneData(data)
+        },
+        ...trash
+      ]);
     },
 
     formatChangeDate(timestamp) {
@@ -1684,6 +1894,7 @@ export default {
       return {
         selectedId,
         changes: normalizeChanges(value.changes),
+        trash: normalizeTrash(value.trash),
         aircrafts: value.aircrafts.map((aircraft) => ({
           id: String(aircraft.id || ""),
           code: String(aircraft.code || ""),
@@ -1890,6 +2101,23 @@ export default {
       return new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value);
     },
 
+    downloadAircraftExcel(aircraft) {
+      if (!aircraft) {
+        return;
+      }
+
+      const excel = this.createAircraftExcel(aircraft);
+      const blob = new Blob([excel], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${sanitizeFilename(aircraft.code)}-${sanitizeFilename(aircraft.name)}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+
     downloadAircraftPdf(aircraft) {
       if (!aircraft) {
         return;
@@ -1905,6 +2133,118 @@ export default {
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+
+    createAircraftExcel(aircraft) {
+      const rows = Array.isArray(aircraft.rows) ? aircraft.rows : [];
+      const critical = rows.filter((row) => this.getStatus(row) === "CRITICO").length;
+      const alert = rows.filter((row) => this.getStatus(row) === "ALERTA").length;
+      const ok = rows.filter((row) => this.getStatus(row) === "OK").length;
+      const assigned = rows.reduce((sum, row) => sum + this.rowAssignedHours(row), 0);
+      const consumed = rows.reduce((sum, row) => sum + this.rowConsumedHours(row), 0);
+      const remaining = rows.reduce((sum, row) => sum + this.rowRemainingHours(row), 0);
+
+      const headers = [
+        "Orden",
+        "Componente",
+        "Serie",
+        "Fecha fabricacion",
+        "Taller",
+        "Ultimo Overhaul",
+        "Asignado TBO (hrs)",
+        "Asignado TBO (anos)",
+        "Consumido TBO hrs",
+        "Consumido TBO anos",
+        "Asignado TSN (hrs)",
+        "Asignado TSN (anos)",
+        "Consumido TSN hrs",
+        "Consumido TSN anos",
+        "Remanente TBO (hrs)",
+        "Remanente TBO (anos)",
+        "Remanente TSN (hrs)",
+        "Remanente TSN (anos)",
+        "Notas",
+        "Vencimiento",
+        "Estado"
+      ];
+
+      const columnWidths = [
+        7, 24, 16, 16, 20, 18, 16, 16, 16, 16, 16,
+        16, 16, 16, 17, 17, 17, 17, 30, 16, 14
+      ];
+
+      const statusStyle = (status) => {
+        if (status === "CRITICO") {
+          return "background:#ffd7d7;color:#9b1c1c;font-weight:700;";
+        }
+        if (status === "ALERTA") {
+          return "background:#fff0c2;color:#7a5200;font-weight:700;";
+        }
+        return "background:#d9f7e6;color:#136b3a;font-weight:700;";
+      };
+
+      const tableRows = rows.map((row, index) => {
+        const status = this.getStatus(row);
+        const values = [
+          index + 1,
+          row.component || "--",
+          row.series || "--",
+          row.manufactureDate || "--",
+          row.workshop || "--",
+          row.overhaul || "--",
+          row.assignedTboHours || row.assigned || "--",
+          row.assignedTboYears || "--",
+          row.consumedTboHours || row.consumed || "--",
+          row.consumedTboYears || "--",
+          row.assignedTsnHours || "--",
+          row.assignedTsnYears || "--",
+          row.consumedTsnHours || "--",
+          row.consumedTsnYears || "--",
+          row.remainingTboHours || row.remaining || "--",
+          row.remainingTboYears || "--",
+          row.remainingTsnHours || "--",
+          row.remainingTsnYears || "--",
+          row.notes || "--",
+          row.due || "--",
+          status
+        ];
+
+        return `<tr class="${index % 2 === 0 ? "even-row" : "odd-row"}">${values.map((value, valueIndex) => {
+          const extraStyle = valueIndex === values.length - 1 ? statusStyle(status) : "";
+          const alignment = valueIndex === 0 || (valueIndex >= 6 && valueIndex <= 17) ? "text-align:right;" : "text-align:left;";
+          return `<td style="border:1px solid #b8c7da;padding:7px;vertical-align:top;${alignment}${extraStyle}">${escapeHtml(value)}</td>`;
+        }).join("")}</tr>`;
+      }).join("");
+
+      return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #1d2b3a; }
+    table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+    td, th { mso-number-format: "\\@"; }
+    .even-row td { background: #ffffff; }
+    .odd-row td { background: #f3f7fc; }
+    .title { background: #0a3a78; color: #ffffff; font-size: 22px; font-weight: 700; }
+    .subtitle { background: #dceaff; color: #0a3a78; font-weight: 700; }
+    .summary-label { background: #edf4ff; font-weight: 700; }
+    th { background: #176ee8; color: #ffffff; border: 1px solid #0a3a78; padding: 8px; font-weight: 700; text-align: center; white-space: normal; }
+  </style>
+</head>
+<body>
+  <table>
+    <colgroup>${columnWidths.map((width) => `<col style="width:${width}ch">`).join("")}</colgroup>
+    <tr><td class="title" colspan="${headers.length}">DIVMAAER - Control de Calidad</td></tr>
+    <tr><td class="subtitle" colspan="${headers.length}">Reporte de Aeronave: ${escapeHtml(aircraft.code)} - ${escapeHtml(aircraft.name || "--")}</td></tr>
+    <tr><td class="summary-label">Fecha reporte</td><td>${escapeHtml(formatEsDate(new Date()))}</td><td class="summary-label">Componentes</td><td>${rows.length}</td><td class="summary-label">OK</td><td>${ok}</td><td class="summary-label">Alertas</td><td>${alert}</td><td class="summary-label">Criticos</td><td>${critical}</td></tr>
+    <tr><td class="summary-label">TBO asignado</td><td>${escapeHtml(this.formatMetric(assigned))}</td><td class="summary-label">Consumido</td><td>${escapeHtml(this.formatMetric(consumed))}</td><td class="summary-label">Remanente</td><td>${escapeHtml(this.formatMetric(remaining))}</td><td class="summary-label">Notas</td><td colspan="4">${escapeHtml(aircraft.notes || "--")}</td></tr>
+    <tr></tr>
+    <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>
+    ${tableRows || `<tr><td colspan="${headers.length}" style="border:1px solid #b8c7da;padding:10px;">No hay componentes registrados.</td></tr>`}
+  </table>
+</body>
+</html>`;
     },
 
     createAircraftPdf(aircraft) {
@@ -1928,15 +2268,18 @@ export default {
           addPage();
         }
       };
-      const text = (value, x, yPosition, size = 9, font = "F1") => {
-        commands.push(`BT /${font} ${size} Tf ${x} ${yPosition} Td (${escapePdfText(value)}) Tj ET`);
+      const fillRect = (x, yPosition, width, height, color) => {
+        commands.push(`${color.join(" ")} rg ${x} ${yPosition} ${width} ${height} re f`);
+      };
+      const text = (value, x, yPosition, size = 9, font = "F1", color = [0.11, 0.17, 0.23]) => {
+        commands.push(`${color.join(" ")} rg BT /${font} ${size} Tf ${x} ${yPosition} Td (${escapePdfText(value)}) Tj ET`);
       };
       const line = (x1, y1, x2, y2) => {
-        commands.push(`0.72 w ${x1} ${y1} m ${x2} ${y2} l S`);
+        commands.push(`0.72 w 0.70 0.77 0.86 RG ${x1} ${y1} m ${x2} ${y2} l S`);
       };
-      const addTextLine = (value, x = margin, size = 9, font = "F1", step = 13) => {
+      const addTextLine = (value, x = margin, size = 9, font = "F1", step = 13, color) => {
         ensureSpace(step);
-        text(value, x, y, size, font);
+        text(value, x, y, size, font, color);
         y -= step;
       };
       const addWrapped = (label, value, x, maxLength, size = 9) => {
@@ -1957,15 +2300,20 @@ export default {
         .sort((a, b) => a.dueDate - b.dueDate)[0];
       const state = critical > 0 ? "CRITICO" : alert > 0 ? "ALERTA" : rows.length ? "OPERATIVO" : "SIN DATOS";
 
-      addTextLine("DIVMAAER - Control de Calidad", margin, 10, "F2", 16);
-      addTextLine(`Reporte de Aeronave: ${aircraft.code}`, margin, 20, "F2", 24);
-      addTextLine(aircraft.name || "--", margin, 13, "F1", 18);
+      fillRect(margin, y - 7, contentWidth, 30, [0.04, 0.23, 0.47]);
+      text("DIVMAAER - Control de Calidad", margin + 12, y + 3, 12, "F2", [1, 1, 1]);
+      y -= 40;
+      fillRect(margin, y - 8, contentWidth, 27, [0.86, 0.92, 1]);
+      text(`Reporte de Aeronave: ${aircraft.code}`, margin + 12, y + 2, 13, "F2", [0.04, 0.23, 0.47]);
+      y -= 34;
+      addTextLine(aircraft.name || "--", margin, 11, "F1", 16, [0.25, 0.31, 0.38]);
       line(margin, y + 3, pageWidth - margin, y + 3);
       y -= 12;
 
-      addTextLine("Resumen operativo", margin, 13, "F2", 18);
+      addTextLine("Resumen operativo", margin, 13, "F2", 18, [0.04, 0.23, 0.47]);
       addTextLine(`Fecha de reporte: ${formatEsDate(new Date())}`, margin, 9, "F1", 13);
-      addTextLine(`Estado general: ${state}`, margin, 9, "F2", 13);
+      const stateColor = state === "CRITICO" ? [0.61, 0.11, 0.11] : state === "ALERTA" ? [0.48, 0.32, 0] : [0.08, 0.42, 0.23];
+      addTextLine(`Estado general: ${state}`, margin, 9, "F2", 13, stateColor);
       addTextLine(`Componentes registrados: ${rows.length} | Operativos: ${ok} | Alertas: ${alert} | Criticos: ${critical}`, margin, 9, "F1", 13);
       addTextLine(`TBO asignado: ${this.formatMetric(assigned)} h | Consumido: ${this.formatMetric(consumed)} h | Remanente: ${this.formatMetric(remaining)} h`, margin, 9, "F1", 13);
       addTextLine(`Proximo vencimiento: ${firstDue ? `${firstDue.row.component || "Componente"} (${firstDue.row.due})` : "--"}`, margin, 9, "F1", 16);
@@ -1988,8 +2336,9 @@ export default {
 
       const addTableHeader = () => {
         ensureSpace(28);
+        fillRect(margin, y - 7, contentWidth, 20, [0.09, 0.43, 0.91]);
         line(margin, y + 7, pageWidth - margin, y + 7);
-        columns.forEach((column) => text(column.label, column.x, y, 8, "F2"));
+        columns.forEach((column) => text(column.label, column.x + 2, y, 8, "F2", [1, 1, 1]));
         y -= 12;
         line(margin, y + 5, pageWidth - margin, y + 5);
       };
@@ -2016,9 +2365,13 @@ export default {
           row.due || "--",
           this.getStatus(row)
         ];
+        const rowStatus = values[9];
+        const rowColor = rowStatus === "CRITICO" ? [1, 0.84, 0.84] : rowStatus === "ALERTA" ? [1, 0.94, 0.72] : index % 2 === 0 ? [1, 1, 1] : [0.95, 0.97, 1];
+        fillRect(margin, y - 7, contentWidth, 18, rowColor);
+        const statusColor = rowStatus === "CRITICO" ? [0.61, 0.11, 0.11] : rowStatus === "ALERTA" ? [0.48, 0.32, 0] : [0.08, 0.42, 0.23];
         columns.forEach((column, columnIndex) => {
-          const maxLength = Math.max(4, Math.floor(column.width / 5));
-          text(wrapPdfText(values[columnIndex], maxLength)[0], column.x, y, 7.6, columnIndex === 9 ? "F2" : "F1");
+          const maxLength = Math.max(4, Math.floor(column.width / (columnIndex === 1 ? 4.8 : 5)));
+          text(wrapPdfText(values[columnIndex], maxLength)[0], column.x + 2, y, 7.6, columnIndex === 9 ? "F2" : "F1", columnIndex === 9 ? statusColor : undefined);
         });
         y -= 12;
         if (row.notes) {
@@ -2167,7 +2520,7 @@ export default {
       aircraft.name = name;
       aircraft.notes = notes;
       this.cancelAircraftEdit();
-      this.recordSystemChange("Aeronave actualizada", `${code} - ${name}`);
+      this.recordSystemChange("Aeronave actualizada", `${code} - ${name}`, code);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("La aeronave se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -2206,7 +2559,7 @@ export default {
       aircrafts.splice(targetIndex, 0, draggedAircraft);
       this.fleet.aircrafts = aircrafts;
       this.finishAircraftDrag();
-      this.recordSystemChange("Aeronaves reordenadas", `${draggedAircraft.code} movida en la lista`);
+      this.recordSystemChange("Aeronaves reordenadas", `${draggedAircraft.code} movida en la lista`, draggedAircraft.code);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("El orden se actualizo localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -2245,7 +2598,7 @@ export default {
       this.newAircraft.code = "";
       this.newAircraft.name = "";
       this.newAircraft.notes = "";
-      this.recordSystemChange("Aeronave creada", `${code} - ${name}`);
+      this.recordSystemChange("Aeronave creada", `${code} - ${name}`, code);
       const saved = await this.persistFleet();
       this.$nextTick(() => window.scrollTo(scrollX, scrollY));
       if (!saved) {
@@ -2274,12 +2627,13 @@ export default {
         return;
       }
 
+      this.addToTrash("aircraft", aircraft, aircraft, `${aircraft.code} - ${aircraft.name}`);
       this.fleet.aircrafts = this.fleet.aircrafts.filter((item) => item.id !== aircraftId);
       if (this.fleet.selectedId === aircraftId) {
         this.fleet.selectedId = this.fleet.aircrafts[0] ? this.fleet.aircrafts[0].id : "";
       }
 
-      this.recordSystemChange("Aeronave eliminada", `${aircraft.code} - ${aircraft.name}`);
+      this.recordSystemChange("Aeronave eliminada", `${aircraft.code} - ${aircraft.name}`, aircraft.code);
       const saved = await this.persistFleet();
       if (!saved) {
         window.alert("La aeronave se elimino localmente, pero Firebase no pudo sincronizar el cambio.");
@@ -2298,6 +2652,7 @@ export default {
       this.currentAircraft.rows.push(normalizeRow({
         component: "Nuevo componente",
         series: "",
+        manufactureDate: "",
         workshop: "",
         overhaul: formatEsDate(TODAY),
         assigned: "0",
@@ -2394,9 +2749,56 @@ export default {
         return;
       }
 
+      this.addToTrash("component", row, this.currentAircraft, componentName);
       this.currentAircraft.rows.splice(rowIndex, 1);
       this.recordSystemChange("Componente eliminado", `${this.currentAircraft.code}: ${componentName}`);
       await this.persistFleet();
+    },
+
+    async restoreTrashItem(itemId) {
+      if (!this.isOwner) {
+        window.alert("Solo el propietario puede restaurar elementos.");
+        return;
+      }
+
+      const trash = normalizeTrash(this.fleet.trash);
+      const item = trash.find((entry) => entry.id === itemId);
+      if (!item) {
+        window.alert("Este elemento ya no esta disponible en la papelera.");
+        this.fleet.trash = trash;
+        await this.persistFleet();
+        return;
+      }
+
+      if (item.type === "aircraft") {
+        const restoredAircraft = {
+          ...item.data,
+          id: item.data.id || `${sanitizeFilename(item.aircraftCode || item.name)}-${Date.now()}`,
+          rows: Array.isArray(item.data.rows) ? item.data.rows.map(normalizeRow) : []
+        };
+        const exists = this.fleet.aircrafts.some((aircraft) => aircraft.id === restoredAircraft.id);
+        restoredAircraft.id = exists ? `${restoredAircraft.id}-${Date.now()}` : restoredAircraft.id;
+        this.fleet.aircrafts.push(restoredAircraft);
+        this.fleet.selectedId = restoredAircraft.id;
+        this.recordSystemChange("Aeronave restaurada", `${restoredAircraft.code} - ${restoredAircraft.name}`, restoredAircraft.code);
+      } else {
+        const aircraft = this.fleet.aircrafts.find((entry) => entry.id === item.aircraftId)
+          || this.fleet.aircrafts.find((entry) => entry.code === item.aircraftCode)
+          || this.currentAircraft;
+        if (!aircraft) {
+          window.alert("No hay aeronave disponible para restaurar el componente.");
+          return;
+        }
+        aircraft.rows.push(normalizeRow(item.data));
+        this.fleet.selectedId = aircraft.id;
+        this.recordSystemChange("Componente restaurado", `${aircraft.code}: ${item.name}`);
+      }
+
+      this.fleet.trash = trash.filter((entry) => entry.id !== itemId);
+      const saved = await this.persistFleet();
+      if (!saved) {
+        window.alert("El elemento se restauro localmente, pero Firebase no pudo sincronizar el cambio.");
+      }
     },
 
     setMobileMenuOpen(open) {
