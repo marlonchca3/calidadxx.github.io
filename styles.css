@@ -1443,6 +1443,46 @@ main,
   flex-wrap: wrap;
 }
 
+.component-add-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.component-add-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 12;
+  width: 190px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: rgba(6, 22, 48, 0.98);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.36);
+}
+
+.component-add-options button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(125, 169, 237, 0.14);
+  background: transparent;
+  color: #d7e6ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.component-add-options button:last-child {
+  border-bottom: 0;
+}
+
+.component-add-options button:hover {
+  background: rgba(48, 121, 214, 0.22);
+}
+
 .table-btn {
   border: 1px solid var(--line-strong);
   background: rgba(12, 36, 74, 0.9);
@@ -1499,7 +1539,7 @@ main,
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 2260px;
+  min-width: 2780px;
   font-size: 13px;
 }
 
@@ -2256,5 +2296,16 @@ footer {
   .table-tools {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .component-add-menu,
+  .component-add-menu .table-btn,
+  .component-add-options {
+    width: 100%;
+  }
+
+  .component-add-options {
+    left: 0;
+    right: auto;
   }
 }

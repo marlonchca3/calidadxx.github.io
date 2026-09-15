@@ -403,7 +403,13 @@
             <div class="table-title">
               <h2>Base de Datos de Componentes</h2>
               <div class="table-tools">
-                <button class="table-btn" type="button" :disabled="!isOwner" @click="addRow"><img class="btn-icon" :src="icons.add" alt="" aria-hidden="true">Agregar componente</button>
+                <div class="component-add-menu">
+                  <button class="table-btn" type="button" :disabled="!isOwner" @click="componentAddMenuOpen = !componentAddMenuOpen"><img class="btn-icon" :src="icons.add" alt="" aria-hidden="true">Agregar componente</button>
+                  <div v-if="componentAddMenuOpen && isOwner" class="component-add-options">
+                    <button type="button" @click="addRow('generic')">Nuevo componente</button>
+                    <button type="button" @click="addRow('apu-tg-16m')">APU TG-16M</button>
+                  </div>
+                </div>
                 <button class="table-btn" type="button" :disabled="!isOwner" @click="resetDb"><img class="btn-icon" :src="icons.restore" alt="" aria-hidden="true">Restaurar datos</button>
               </div>
             </div>
@@ -434,6 +440,10 @@
                     <th>Remanente TBO (años)</th>
                     <th>Remanente TSN (hrs)</th>
                     <th>Remanente TSN (años)</th>
+                    <th>Arranques TSN de motores</th>
+                    <th>Gaso-horas TSN</th>
+                    <th>Arranque TBO de motores</th>
+                    <th>Gaso-horas TBO</th>
                     <th>Notas</th>
                     <th>Vencimiento</th>
                     <th>Estado</th>
@@ -478,6 +488,10 @@
                     <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTsnHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.motorStartsTsn" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Arranques TSN de motores')"></td>
+                    <td><input v-model="row.gasHoursTsn" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TSN')"></td>
+                    <td><input v-model="row.motorStartsTbo" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Arranque TBO de motores')"></td>
+                    <td><input v-model="row.gasHoursTbo" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TBO')"></td>
                     <td><textarea v-model="row.notes" class="cell-input notes-input" :disabled="!isOwner" maxlength="360" placeholder="Notas del componente" @change="saveRowFieldChange(row, 'Notas')"></textarea></td>
                     <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
                     <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
@@ -790,6 +804,10 @@ function normalizeRow(row) {
     remainingTboYears,
     remainingTsnHours,
     remainingTsnYears,
+    motorStartsTsn: String(row.motorStartsTsn || ""),
+    gasHoursTsn: String(row.gasHoursTsn || ""),
+    motorStartsTbo: String(row.motorStartsTbo || ""),
+    gasHoursTbo: String(row.gasHoursTbo || ""),
     notes: String(row.notes || ""),
     due
   };
@@ -1007,6 +1025,7 @@ export default {
       lastSyncAt: hasStoredFleet(localStorage) ? Number(readFleetMeta().updatedAt || 0) : 0,
       loginEmail: "",
       loginPassword: "",
+      componentAddMenuOpen: false,
       passwordVisible: false,
       loginThreeCleanup: null,
       syncSource: "local",
@@ -2163,6 +2182,10 @@ export default {
         "Remanente TBO (anos)",
         "Remanente TSN (hrs)",
         "Remanente TSN (anos)",
+        "Arranques TSN de motores",
+        "Gaso-horas TSN",
+        "Arranque TBO de motores",
+        "Gaso-horas TBO",
         "Notas",
         "Vencimiento",
         "Estado"
@@ -2170,7 +2193,7 @@ export default {
 
       const columnWidths = [
         7, 24, 16, 16, 20, 18, 16, 16, 16, 16, 16,
-        16, 16, 16, 17, 17, 17, 17, 30, 16, 14
+        16, 16, 16, 17, 17, 17, 17, 22, 16, 22, 16, 30, 16, 14
       ];
 
       const statusStyle = (status) => {
@@ -2204,6 +2227,10 @@ export default {
           row.remainingTboYears || "--",
           row.remainingTsnHours || "--",
           row.remainingTsnYears || "--",
+          row.motorStartsTsn || "--",
+          row.gasHoursTsn || "--",
+          row.motorStartsTbo || "--",
+          row.gasHoursTbo || "--",
           row.notes || "--",
           row.due || "--",
           status
@@ -2211,7 +2238,7 @@ export default {
 
         return `<tr class="${index % 2 === 0 ? "even-row" : "odd-row"}">${values.map((value, valueIndex) => {
           const extraStyle = valueIndex === values.length - 1 ? statusStyle(status) : "";
-          const alignment = valueIndex === 0 || (valueIndex >= 6 && valueIndex <= 17) ? "text-align:right;" : "text-align:left;";
+          const alignment = valueIndex === 0 || (valueIndex >= 6 && valueIndex <= 21) ? "text-align:right;" : "text-align:left;";
           return `<td style="border:1px solid #b8c7da;padding:7px;vertical-align:top;${alignment}${extraStyle}">${escapeHtml(value)}</td>`;
         }).join("")}</tr>`;
       }).join("");
@@ -2351,6 +2378,10 @@ export default {
         ["Consumido TSN anos", row.consumedTsnYears || "--"],
         ["Remanente TSN hrs", row.remainingTsnHours || "--"],
         ["Remanente TSN anos", row.remainingTsnYears || "--"],
+        ["Arranques TSN de motores", row.motorStartsTsn || "--"],
+        ["Gaso-horas TSN", row.gasHoursTsn || "--"],
+        ["Arranque TBO de motores", row.motorStartsTbo || "--"],
+        ["Gaso-horas TBO", row.gasHoursTbo || "--"],
         ["Estado", this.getStatus(row)],
         ["Notas", row.notes || "--"]
       ];
@@ -2649,16 +2680,8 @@ export default {
       }
     },
 
-    async addRow() {
-      if (!this.isOwner) {
-        window.alert("Solo el propietario puede editar.");
-        return;
-      }
-      if (!this.currentAircraft) {
-        return;
-      }
-
-      this.currentAircraft.rows.push(normalizeRow({
+    getComponentTemplate(templateKey = "generic") {
+      const baseTemplate = {
         component: "Nuevo componente",
         series: "",
         manufactureDate: "",
@@ -2679,10 +2702,41 @@ export default {
         remainingTboYears: "0",
         remainingTsnHours: "0",
         remainingTsnYears: calculateDueDate(formatEsDate(TODAY), "1"),
+        motorStartsTsn: "",
+        gasHoursTsn: "",
+        motorStartsTbo: "",
+        gasHoursTbo: "",
         notes: "",
         due: calculateDueDate(formatEsDate(TODAY), "1")
-      }));
-      this.recordSystemChange("Componente agregado", `${this.currentAircraft.code}: Nuevo componente`);
+      };
+
+      if (templateKey === "apu-tg-16m") {
+        return {
+          ...baseTemplate,
+          component: "APU TG-16M",
+          assignedTboYears: "",
+          assignedTsnYears: "",
+          remainingTsnYears: "",
+          due: ""
+        };
+      }
+
+      return baseTemplate;
+    },
+
+    async addRow(templateKey = "generic") {
+      if (!this.isOwner) {
+        window.alert("Solo el propietario puede editar.");
+        return;
+      }
+      if (!this.currentAircraft) {
+        return;
+      }
+
+      this.componentAddMenuOpen = false;
+      const row = normalizeRow(this.getComponentTemplate(templateKey));
+      this.currentAircraft.rows.push(row);
+      this.recordSystemChange("Componente agregado", `${this.currentAircraft.code}: ${row.component || "Nuevo componente"}`);
       await this.persistFleet();
     },
 
