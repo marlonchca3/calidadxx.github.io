@@ -821,6 +821,66 @@ main,
   box-shadow: 0 0 0 2px rgba(63, 140, 255, 0.24);
 }
 
+.overhaul-combo {
+  position: relative;
+  min-width: 160px;
+}
+
+.overhaul-combo .overhaul-input {
+  width: 100%;
+  padding-right: 34px;
+}
+
+.overhaul-menu-btn {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 30px;
+  border: 0;
+  border-left: 1px solid rgba(125, 169, 237, 0.2);
+  border-radius: 0 7px 7px 0;
+  background: transparent;
+  color: #bcd7ff;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.overhaul-menu-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.overhaul-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 150px;
+  border: 1px solid rgba(125, 169, 237, 0.32);
+  border-radius: 8px;
+  background: #081a39;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.3);
+  padding: 4px;
+}
+
+.overhaul-menu button {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #e7f1ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.overhaul-menu button:hover {
+  background: rgba(91, 151, 242, 0.2);
+}
+
 .mobile-menu-btn,
 .mobile-menu-backdrop {
   display: none;

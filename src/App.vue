@@ -440,9 +440,9 @@
                     <th>Remanente TBO (años)</th>
                     <th>Remanente TSN (hrs)</th>
                     <th>Remanente TSN (años)</th>
-                    <th>Arranques TSN de motores</th>
+                    <th>Arranques TSN</th>
                     <th>Gaso-horas TSN</th>
-                    <th>Arranque TBO de motores</th>
+                    <th>Arranques TBO</th>
                     <th>Gaso-horas TBO</th>
                     <th>Notas</th>
                     <th>Vencimiento</th>
@@ -475,7 +475,17 @@
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Serie')"></td>
                     <td><input v-model="row.manufactureDate" class="cell-input" :disabled="!isOwner" placeholder="dd/mm/aaaa" @change="saveRowFieldChange(row, 'Fecha fabricacion')"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Taller')"></td>
-                    <td><input v-model="row.overhaul" class="cell-input" :disabled="!isOwner" @input="updateAllDerived(row)" @change="saveRowFieldChange(row, 'Ultimo overhaul', 'all')"></td>
+                    <td>
+                      <div class="overhaul-combo" :class="{ open: openOverhaulMenuIndex === index }">
+                        <input v-model="row.overhaul" class="cell-input overhaul-input" :disabled="!isOwner" placeholder="dd/mm/aaaa" @input="updateAllDerived(row)" @change="saveRowFieldChange(row, 'Ultimo overhaul', 'all')">
+                        <button class="overhaul-menu-btn" type="button" :disabled="!isOwner" title="Opciones de overhaul" @click="toggleOverhaulMenu(index)">
+                          ▼
+                        </button>
+                        <div v-if="openOverhaulMenuIndex === index" class="overhaul-menu">
+                          <button type="button" @click="applyNoOverhaul(row)">NO OVERHAUL</button>
+                        </div>
+                      </div>
+                    </td>
                     <td><input v-model="row.assignedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Asignado TBO horas', 'tbo')"></td>
                     <td><input v-model="row.assignedTboYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Asignado TBO años', 'tbo')"></td>
                     <td><input v-model="row.consumedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Consumido TBO horas', 'tbo')"></td>
@@ -488,10 +498,18 @@
                     <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTsnHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
-                    <td><input v-model="row.motorStartsTsn" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Arranques TSN de motores')"></td>
-                    <td><input v-model="row.gasHoursTsn" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TSN')"></td>
-                    <td><input v-model="row.motorStartsTbo" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Arranque TBO de motores')"></td>
-                    <td><input v-model="row.gasHoursTbo" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TBO')"></td>
+                    <template v-if="isApuRow(row)">
+                      <td><input v-model="row.apuStartsTsn" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Arr. APU TSN" @change="saveRowFieldChange(row, 'Arranques TSN APU')"></td>
+                      <td><input v-model="row.apuGasHoursTsn" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Gaso-horas APU TSN" @change="saveRowFieldChange(row, 'Gaso-horas TSN APU')"></td>
+                      <td><input v-model="row.apuStartsTbo" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Arr. APU TBO" @change="saveRowFieldChange(row, 'Arranques TBO APU')"></td>
+                      <td><input v-model="row.apuGasHoursTbo" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Gaso-horas APU TBO" @change="saveRowFieldChange(row, 'Gaso-horas TBO APU')"></td>
+                    </template>
+                    <template v-else>
+                      <td><input v-model="row.motorStartsTsn" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Arr. motor TSN" @change="saveRowFieldChange(row, 'Arranques TSN de motores')"></td>
+                      <td><input v-model="row.gasHoursTsn" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TSN')"></td>
+                      <td><input v-model="row.motorStartsTbo" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Arr. motor TBO" @change="saveRowFieldChange(row, 'Arranque TBO de motores')"></td>
+                      <td><input v-model="row.gasHoursTbo" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TBO')"></td>
+                    </template>
                     <td><textarea v-model="row.notes" class="cell-input notes-input" :disabled="!isOwner" maxlength="360" placeholder="Notas del componente" @change="saveRowFieldChange(row, 'Notas')"></textarea></td>
                     <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
                     <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
@@ -754,7 +772,14 @@ function formatNumberValue(value) {
   return Number.isInteger(number) ? String(number) : String(Number(number.toFixed(2)));
 }
 
+function isNoOverhaul(value) {
+  return String(value || "").trim().toUpperCase() === "NO OVERHAUL";
+}
+
 function calculateConsumedYears(overhaul) {
+  if (isNoOverhaul(overhaul)) {
+    return "0";
+  }
   const overhaulDate = parseEsDate(overhaul);
   if (!overhaulDate || overhaulDate > TODAY) {
     return "0";
@@ -770,6 +795,7 @@ function currentConsumedDate() {
 }
 
 function normalizeRow(row) {
+  const noOverhaul = isNoOverhaul(row.overhaul);
   const assignedTboHours = String(row.assignedTboHours ?? row.assigned ?? "");
   const assignedTboYears = String(row.assignedTboYears ?? "");
   const consumedTboHours = String(row.consumedTboHours ?? row.consumed ?? "");
@@ -778,9 +804,9 @@ function normalizeRow(row) {
   const assignedTsnYears = String(row.assignedTsnYears ?? "");
   const consumedTsnHours = String(row.consumedTsnHours ?? "");
   const remainingTsnHours = formatNumberValue(parseNumeric(assignedTsnHours) - parseNumeric(consumedTsnHours));
-  const remainingTsnYears = calculateDueDate(row.overhaul, assignedTsnYears) || String(row.remainingTsnYears || "");
+  const remainingTsnYears = noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTsnYears) || String(row.remainingTsnYears || "");
   const remainingTboHours = formatNumberValue(parseNumeric(assignedTboHours) - parseNumeric(consumedTboHours));
-  const due = calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
+  const due = noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
   const remainingTboYears = due;
 
   return {
@@ -808,6 +834,10 @@ function normalizeRow(row) {
     gasHoursTsn: String(row.gasHoursTsn || ""),
     motorStartsTbo: String(row.motorStartsTbo || ""),
     gasHoursTbo: String(row.gasHoursTbo || ""),
+    apuStartsTsn: String(row.apuStartsTsn || ""),
+    apuGasHoursTsn: String(row.apuGasHoursTsn || ""),
+    apuStartsTbo: String(row.apuStartsTbo || ""),
+    apuGasHoursTbo: String(row.apuGasHoursTbo || ""),
     notes: String(row.notes || ""),
     due
   };
@@ -923,6 +953,9 @@ function addTboYears(date, yearsValue) {
 }
 
 function calculateDueDate(overhaul, assignedTboYears) {
+  if (isNoOverhaul(overhaul)) {
+    return "";
+  }
   const overhaulDate = parseEsDate(overhaul);
   const dueDate = overhaulDate ? addTboYears(overhaulDate, assignedTboYears) : null;
   return dueDate ? formatEsDate(dueDate) : "";
@@ -1026,6 +1059,7 @@ export default {
       loginEmail: "",
       loginPassword: "",
       componentAddMenuOpen: false,
+      openOverhaulMenuIndex: null,
       passwordVisible: false,
       loginThreeCleanup: null,
       syncSource: "local",
@@ -1731,6 +1765,44 @@ export default {
       return { key: "other", label: "Otros", color: "#98a9c2", logo: "O" };
     },
 
+    isApuRow(row) {
+      return /\bapu\b|tg-?16m|ai-9/i.test(`${row.component || ""} ${row.series || ""}`);
+    },
+
+    usageFieldLabels(row) {
+      if (this.isApuRow(row)) {
+        return {
+          startsTsn: "Arranques TSN APU",
+          gasTsn: "Gaso-horas TSN APU",
+          startsTbo: "Arranques TBO APU",
+          gasTbo: "Gaso-horas TBO APU"
+        };
+      }
+      return {
+        startsTsn: "Arranques TSN de motores",
+        gasTsn: "Gaso-horas TSN",
+        startsTbo: "Arranque TBO de motores",
+        gasTbo: "Gaso-horas TBO"
+      };
+    },
+
+    usageFieldValues(row) {
+      if (this.isApuRow(row)) {
+        return {
+          startsTsn: row.apuStartsTsn || "--",
+          gasTsn: row.apuGasHoursTsn || "--",
+          startsTbo: row.apuStartsTbo || "--",
+          gasTbo: row.apuGasHoursTbo || "--"
+        };
+      }
+      return {
+        startsTsn: row.motorStartsTsn || "--",
+        gasTsn: row.gasHoursTsn || "--",
+        startsTbo: row.motorStartsTbo || "--",
+        gasTbo: row.gasHoursTbo || "--"
+      };
+    },
+
     componentLogo(row) {
       return this.componentCategory(row).logo;
     },
@@ -1839,6 +1911,16 @@ export default {
       return parseNumeric(row.remainingTboHours ?? row.remaining);
     },
 
+    toggleOverhaulMenu(index) {
+      this.openOverhaulMenuIndex = this.openOverhaulMenuIndex === index ? null : index;
+    },
+
+    async applyNoOverhaul(row) {
+      row.overhaul = "NO OVERHAUL";
+      this.openOverhaulMenuIndex = null;
+      await this.saveRowFieldChange(row, "Ultimo overhaul", "all");
+    },
+
     updateTboDerived(row) {
       const consumedDate = currentConsumedDate();
       const remainingHours = this.rowAssignedHours(row) - this.rowConsumedHours(row);
@@ -1850,7 +1932,9 @@ export default {
       row.assigned = String(row.assignedTboHours ?? "");
       row.consumed = String(row.consumedTboHours ?? "");
       row.remaining = row.remainingTboHours;
-      if (due) {
+      if (isNoOverhaul(row.overhaul)) {
+        row.due = "";
+      } else if (due) {
         row.due = due;
       }
     },
@@ -1860,7 +1944,7 @@ export default {
       const remainingHours = parseNumeric(row.assignedTsnHours) - parseNumeric(row.consumedTsnHours);
       row.consumedTsnYears = consumedDate;
       row.remainingTsnHours = formatNumberValue(remainingHours);
-      row.remainingTsnYears = calculateDueDate(row.overhaul, row.assignedTsnYears) || "";
+      row.remainingTsnYears = isNoOverhaul(row.overhaul) ? "" : calculateDueDate(row.overhaul, row.assignedTsnYears) || "";
     },
 
     updateAllDerived(row) {
@@ -2182,9 +2266,9 @@ export default {
         "Remanente TBO (anos)",
         "Remanente TSN (hrs)",
         "Remanente TSN (anos)",
-        "Arranques TSN de motores",
+        "Arranques TSN",
         "Gaso-horas TSN",
-        "Arranque TBO de motores",
+        "Arranques TBO",
         "Gaso-horas TBO",
         "Notas",
         "Vencimiento",
@@ -2208,6 +2292,7 @@ export default {
 
       const tableRows = rows.map((row, index) => {
         const status = this.getStatus(row);
+        const usageValues = this.usageFieldValues(row);
         const values = [
           index + 1,
           row.component || "--",
@@ -2227,10 +2312,10 @@ export default {
           row.remainingTboYears || "--",
           row.remainingTsnHours || "--",
           row.remainingTsnYears || "--",
-          row.motorStartsTsn || "--",
-          row.gasHoursTsn || "--",
-          row.motorStartsTbo || "--",
-          row.gasHoursTbo || "--",
+          usageValues.startsTsn,
+          usageValues.gasTsn,
+          usageValues.startsTbo,
+          usageValues.gasTbo,
           row.notes || "--",
           row.due || "--",
           status
@@ -2359,32 +2444,36 @@ export default {
         { x: margin + 520, width: 220 }
       ];
       const fieldRowHeight = 12;
-      const componentFields = (row) => [
-        ["Componente", row.component || "--"],
-        ["Serie", row.series || "--"],
-        ["Fecha fabricacion", row.manufactureDate || "--"],
-        ["Taller", row.workshop || "--"],
-        ["Ultimo Overhaul", row.overhaul || "--"],
-        ["Vencimiento", row.due || "--"],
-        ["Asignado TBO hrs", row.assignedTboHours || row.assigned || "--"],
-        ["Asignado TBO anos", row.assignedTboYears || "--"],
-        ["Consumido TBO hrs", row.consumedTboHours || row.consumed || "--"],
-        ["Consumido TBO anos", row.consumedTboYears || "--"],
-        ["Remanente TBO hrs", row.remainingTboHours || row.remaining || "--"],
-        ["Remanente TBO anos", row.remainingTboYears || "--"],
-        ["Asignado TSN hrs", row.assignedTsnHours || "--"],
-        ["Asignado TSN anos", row.assignedTsnYears || "--"],
-        ["Consumido TSN hrs", row.consumedTsnHours || "--"],
-        ["Consumido TSN anos", row.consumedTsnYears || "--"],
-        ["Remanente TSN hrs", row.remainingTsnHours || "--"],
-        ["Remanente TSN anos", row.remainingTsnYears || "--"],
-        ["Arranques TSN de motores", row.motorStartsTsn || "--"],
-        ["Gaso-horas TSN", row.gasHoursTsn || "--"],
-        ["Arranque TBO de motores", row.motorStartsTbo || "--"],
-        ["Gaso-horas TBO", row.gasHoursTbo || "--"],
-        ["Estado", this.getStatus(row)],
-        ["Notas", row.notes || "--"]
-      ];
+      const componentFields = (row) => {
+        const usageLabels = this.usageFieldLabels(row);
+        const usageValues = this.usageFieldValues(row);
+        return [
+          ["Componente", row.component || "--"],
+          ["Serie", row.series || "--"],
+          ["Fecha fabricacion", row.manufactureDate || "--"],
+          ["Taller", row.workshop || "--"],
+          ["Ultimo Overhaul", row.overhaul || "--"],
+          ["Vencimiento", row.due || "--"],
+          ["Asignado TBO hrs", row.assignedTboHours || row.assigned || "--"],
+          ["Asignado TBO anos", row.assignedTboYears || "--"],
+          ["Consumido TBO hrs", row.consumedTboHours || row.consumed || "--"],
+          ["Consumido TBO anos", row.consumedTboYears || "--"],
+          ["Remanente TBO hrs", row.remainingTboHours || row.remaining || "--"],
+          ["Remanente TBO anos", row.remainingTboYears || "--"],
+          ["Asignado TSN hrs", row.assignedTsnHours || "--"],
+          ["Asignado TSN anos", row.assignedTsnYears || "--"],
+          ["Consumido TSN hrs", row.consumedTsnHours || "--"],
+          ["Consumido TSN anos", row.consumedTsnYears || "--"],
+          ["Remanente TSN hrs", row.remainingTsnHours || "--"],
+          ["Remanente TSN anos", row.remainingTsnYears || "--"],
+          [usageLabels.startsTsn, usageValues.startsTsn],
+          [usageLabels.gasTsn, usageValues.gasTsn],
+          [usageLabels.startsTbo, usageValues.startsTbo],
+          [usageLabels.gasTbo, usageValues.gasTbo],
+          ["Estado", this.getStatus(row)],
+          ["Notas", row.notes || "--"]
+        ];
+      };
 
       rows.forEach((row, index) => {
         const fields = componentFields(row);
@@ -2465,6 +2554,10 @@ export default {
     },
 
     getStatus(row) {
+      if (isNoOverhaul(row.overhaul)) {
+        return "CRITICO";
+      }
+
       const remaining = this.rowRemainingHours(row);
       const dueDate = parseEsDate(row.due);
       if (remaining < 0) {
@@ -2706,6 +2799,10 @@ export default {
         gasHoursTsn: "",
         motorStartsTbo: "",
         gasHoursTbo: "",
+        apuStartsTsn: "",
+        apuGasHoursTsn: "",
+        apuStartsTbo: "",
+        apuGasHoursTbo: "",
         notes: "",
         due: calculateDueDate(formatEsDate(TODAY), "1")
       };
