@@ -169,8 +169,8 @@
                     @dragend="finishAircraftDrag"
                   >
                     <template v-if="editingAircraftId === aircraft.id">
-                      <input v-model.trim="editingAircraftDraft.code" class="aircraft-edit-input" type="text" maxlength="30" aria-label="Codigo de aeronave">
-                      <input v-model.trim="editingAircraftDraft.name" class="aircraft-edit-input" type="text" maxlength="80" aria-label="Nombre de aeronave">
+                      <input v-model.trim="editingAircraftDraft.code" class="aircraft-edit-input" type="text" maxlength="30" aria-label="N° de cola de aeronave">
+                      <input v-model.trim="editingAircraftDraft.name" class="aircraft-edit-input" type="text" maxlength="80" aria-label="Modelo de aeronave">
                       <textarea v-model.trim="editingAircraftDraft.notes" class="aircraft-edit-input aircraft-notes-input" maxlength="240" aria-label="Notas de aeronave" placeholder="Notas"></textarea>
                       <p>Componentes: {{ aircraft.rows.length }}</p>
                     </template>
@@ -2515,13 +2515,13 @@ export default {
       const name = this.editingAircraftDraft.name.trim();
       const notes = this.editingAircraftDraft.notes.trim();
       if (!aircraft || !code || !name) {
-        window.alert("Ingresa codigo y nombre para guardar la aeronave.");
+        window.alert("Ingresa n° cola y modelo para guardar la aeronave.");
         return;
       }
 
       const duplicate = this.fleet.aircrafts.some((item) => item.id !== aircraftId && item.code.toUpperCase() === code);
       if (duplicate) {
-        window.alert("Ese codigo ya existe.");
+        window.alert("Ese n° de cola ya existe.");
         return;
       }
 
@@ -2589,7 +2589,7 @@ export default {
       const name = this.newAircraft.name.trim();
       const notes = this.newAircraft.notes.trim();
       if (!code || !name) {
-        window.alert("Ingresa codigo y nombre para crear la aeronave.");
+        window.alert("Ingresa n° cola y modelo para crear la aeronave.");
         return;
       }
 
