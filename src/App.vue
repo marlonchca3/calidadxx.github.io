@@ -2320,68 +2320,77 @@ export default {
       addWrapped("Notas", aircraft.notes, margin, 110, 9);
       y -= 6;
 
-      addTextLine("Componentes", margin, 13, "F2", 18);
-      const columns = [
-        { label: "#", x: margin, width: 20 },
-        { label: "Componente", x: margin + 22, width: 132 },
-        { label: "Serie", x: margin + 158, width: 108 },
-        { label: "Taller", x: margin + 270, width: 96 },
-        { label: "Overhaul", x: margin + 370, width: 68 },
-        { label: "TBO Asig.", x: margin + 442, width: 58 },
-        { label: "TBO Cons.", x: margin + 504, width: 58 },
-        { label: "Rem.", x: margin + 566, width: 54 },
-        { label: "Vence", x: margin + 624, width: 66 },
-        { label: "Estado", x: margin + 694, width: contentWidth - 694 }
-      ];
-
-      const addTableHeader = () => {
-        ensureSpace(28);
-        fillRect(margin, y - 7, contentWidth, 20, [0.09, 0.43, 0.91]);
-        line(margin, y + 7, pageWidth - margin, y + 7);
-        columns.forEach((column) => text(column.label, column.x + 2, y, 8, "F2", [1, 1, 1]));
-        y -= 12;
-        line(margin, y + 5, pageWidth - margin, y + 5);
-      };
-
-      addTableHeader();
+      addTextLine("Componentes", margin, 13, "F2", 18, [0.04, 0.23, 0.47]);
       if (rows.length === 0) {
         addTextLine("No hay componentes registrados para esta aeronave.", margin, 9, "F1", 13);
       }
 
+      const componentGap = 14.2;
+      const fieldColumns = [
+        { x: margin + 12, width: 240 },
+        { x: margin + 266, width: 240 },
+        { x: margin + 520, width: 220 }
+      ];
+      const fieldRowHeight = 12;
+      const componentFields = (row) => [
+        ["Componente", row.component || "--"],
+        ["Serie", row.series || "--"],
+        ["Fecha fabricacion", row.manufactureDate || "--"],
+        ["Taller", row.workshop || "--"],
+        ["Ultimo Overhaul", row.overhaul || "--"],
+        ["Vencimiento", row.due || "--"],
+        ["Asignado TBO hrs", row.assignedTboHours || row.assigned || "--"],
+        ["Asignado TBO anos", row.assignedTboYears || "--"],
+        ["Consumido TBO hrs", row.consumedTboHours || row.consumed || "--"],
+        ["Consumido TBO anos", row.consumedTboYears || "--"],
+        ["Remanente TBO hrs", row.remainingTboHours || row.remaining || "--"],
+        ["Remanente TBO anos", row.remainingTboYears || "--"],
+        ["Asignado TSN hrs", row.assignedTsnHours || "--"],
+        ["Asignado TSN anos", row.assignedTsnYears || "--"],
+        ["Consumido TSN hrs", row.consumedTsnHours || "--"],
+        ["Consumido TSN anos", row.consumedTsnYears || "--"],
+        ["Remanente TSN hrs", row.remainingTsnHours || "--"],
+        ["Remanente TSN anos", row.remainingTsnYears || "--"],
+        ["Estado", this.getStatus(row)],
+        ["Notas", row.notes || "--"]
+      ];
+
       rows.forEach((row, index) => {
-        ensureSpace(26);
-        if (y > pageHeight - margin - 10) {
-          addTableHeader();
-        }
-        const values = [
-          String(index + 1),
-          row.component || "--",
-          row.series || "--",
-          row.workshop || "--",
-          row.overhaul || "--",
-          row.assignedTboHours || row.assigned || "--",
-          row.consumedTboHours || row.consumed || "--",
-          row.remainingTboHours || row.remaining || "--",
-          row.due || "--",
-          this.getStatus(row)
-        ];
-        const rowStatus = values[9];
-        const rowColor = rowStatus === "CRITICO" ? [1, 0.84, 0.84] : rowStatus === "ALERTA" ? [1, 0.94, 0.72] : index % 2 === 0 ? [1, 1, 1] : [0.95, 0.97, 1];
-        fillRect(margin, y - 7, contentWidth, 18, rowColor);
-        const statusColor = rowStatus === "CRITICO" ? [0.61, 0.11, 0.11] : rowStatus === "ALERTA" ? [0.48, 0.32, 0] : [0.08, 0.42, 0.23];
-        columns.forEach((column, columnIndex) => {
-          const maxLength = Math.max(4, Math.floor(column.width / (columnIndex === 1 ? 4.8 : 5)));
-          text(wrapPdfText(values[columnIndex], maxLength)[0], column.x + 2, y, 7.6, columnIndex === 9 ? "F2" : "F1", columnIndex === 9 ? statusColor : undefined);
+        const fields = componentFields(row);
+        const fieldRows = Math.ceil(fields.length / fieldColumns.length);
+        const cardHeight = 41 + fieldRows * fieldRowHeight + componentGap;
+        ensureSpace(cardHeight);
+
+        const rowStatus = this.getStatus(row);
+        const headerColor = rowStatus === "CRITICO" ? [0.61, 0.11, 0.11] : rowStatus === "ALERTA" ? [0.80, 0.53, 0] : [0.08, 0.42, 0.23];
+        const bodyColor = rowStatus === "CRITICO" ? [1, 0.92, 0.92] : rowStatus === "ALERTA" ? [1, 0.97, 0.84] : [0.95, 0.98, 1];
+        const topY = y;
+
+        fillRect(margin, topY - 9, contentWidth, 22, headerColor);
+        text(`Componente ${index + 1}: ${row.component || "Sin nombre"}`, margin + 12, topY - 1, 9.2, "F2", [1, 1, 1]);
+        text(rowStatus, pageWidth - margin - 68, topY - 1, 9.2, "F2", [1, 1, 1]);
+
+        const bodyTop = topY - 31;
+        const bodyHeight = fieldRows * fieldRowHeight + 10;
+        fillRect(margin, bodyTop - bodyHeight + 12, contentWidth, bodyHeight, bodyColor);
+        line(margin, topY + 13, pageWidth - margin, topY + 13);
+        line(margin, bodyTop - bodyHeight + 12, pageWidth - margin, bodyTop - bodyHeight + 12);
+
+        fields.forEach(([label, value], fieldIndex) => {
+          const column = fieldColumns[fieldIndex % fieldColumns.length];
+          const rowNumber = Math.floor(fieldIndex / fieldColumns.length);
+          const fieldY = bodyTop - rowNumber * fieldRowHeight;
+          const valueX = column.x + 86;
+          const maxLength = Math.max(8, Math.floor((column.width - 92) / 4.2));
+          const isStatus = label === "Estado";
+          const valueColor = isStatus
+            ? rowStatus === "CRITICO" ? [0.61, 0.11, 0.11] : rowStatus === "ALERTA" ? [0.48, 0.32, 0] : [0.08, 0.42, 0.23]
+            : [0.11, 0.17, 0.23];
+          text(`${label}:`, column.x, fieldY, 7.4, "F2", [0.04, 0.23, 0.47]);
+          text(wrapPdfText(value, maxLength)[0], valueX, fieldY, 7.4, isStatus ? "F2" : "F1", valueColor);
         });
-        y -= 12;
-        if (row.notes) {
-          wrapPdfText(`Nota: ${row.notes}`, 125).slice(0, 2).forEach((noteLine) => {
-            ensureSpace(12);
-            text(noteLine, margin + 22, y, 7.2, "F1");
-            y -= 10;
-          });
-        }
-        line(margin, y + 5, pageWidth - margin, y + 5);
+
+        y = bodyTop - bodyHeight + 12 - componentGap - 13;
       });
 
       pages.push(commands.join("\n"));
