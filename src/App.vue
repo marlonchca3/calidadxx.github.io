@@ -2477,8 +2477,27 @@ export default {
 
       rows.forEach((row, index) => {
         const fields = componentFields(row);
+        const renderedFields = fields.map(([label, value], fieldIndex) => {
+          const column = fieldColumns[fieldIndex % fieldColumns.length];
+          const rowNumber = Math.floor(fieldIndex / fieldColumns.length);
+          const valueX = column.x + 86;
+          const maxLength = Math.max(8, Math.floor((column.width - 92) / 4.2));
+          const lines = wrapPdfText(value, maxLength);
+          return { label, value, fieldIndex, column, rowNumber, valueX, lines };
+        });
         const fieldRows = Math.ceil(fields.length / fieldColumns.length);
-        const cardHeight = 41 + fieldRows * fieldRowHeight + componentGap;
+        const rowHeights = Array.from({ length: fieldRows }, (_, rowNumber) => {
+          const maxLines = Math.max(1, ...renderedFields
+            .filter((field) => field.rowNumber === rowNumber)
+            .map((field) => field.lines.length));
+          return Math.max(fieldRowHeight, maxLines * 8.4 + 3.6);
+        });
+        const fieldOffsets = rowHeights.reduce((offsets, height, rowNumber) => {
+          offsets[rowNumber] = rowNumber === 0 ? 0 : offsets[rowNumber - 1] + rowHeights[rowNumber - 1];
+          return offsets;
+        }, []);
+        const fieldsHeight = rowHeights.reduce((sum, height) => sum + height, 0);
+        const cardHeight = 41 + fieldsHeight + componentGap;
         ensureSpace(cardHeight);
 
         const rowStatus = this.getStatus(row);
@@ -2491,23 +2510,21 @@ export default {
         text(rowStatus, pageWidth - margin - 68, topY - 1, 9.2, "F2", [1, 1, 1]);
 
         const bodyTop = topY - 31;
-        const bodyHeight = fieldRows * fieldRowHeight + 10;
+        const bodyHeight = fieldsHeight + 10;
         fillRect(margin, bodyTop - bodyHeight + 12, contentWidth, bodyHeight, bodyColor);
         line(margin, topY + 13, pageWidth - margin, topY + 13);
         line(margin, bodyTop - bodyHeight + 12, pageWidth - margin, bodyTop - bodyHeight + 12);
 
-        fields.forEach(([label, value], fieldIndex) => {
-          const column = fieldColumns[fieldIndex % fieldColumns.length];
-          const rowNumber = Math.floor(fieldIndex / fieldColumns.length);
-          const fieldY = bodyTop - rowNumber * fieldRowHeight;
-          const valueX = column.x + 86;
-          const maxLength = Math.max(8, Math.floor((column.width - 92) / 4.2));
+        renderedFields.forEach(({ label, valueX, column, rowNumber, lines }) => {
+          const fieldY = bodyTop - fieldOffsets[rowNumber];
           const isStatus = label === "Estado";
           const valueColor = isStatus
             ? rowStatus === "CRITICO" ? [0.61, 0.11, 0.11] : rowStatus === "ALERTA" ? [0.48, 0.32, 0] : [0.08, 0.42, 0.23]
             : [0.11, 0.17, 0.23];
           text(`${label}:`, column.x, fieldY, 7.4, "F2", [0.04, 0.23, 0.47]);
-          text(wrapPdfText(value, maxLength)[0], valueX, fieldY, 7.4, isStatus ? "F2" : "F1", valueColor);
+          lines.forEach((lineValue, lineIndex) => {
+            text(lineValue, valueX, fieldY - lineIndex * 8.4, 7.4, isStatus ? "F2" : "F1", valueColor);
+          });
         });
 
         y = bodyTop - bodyHeight + 12 - componentGap - 13;
