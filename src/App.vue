@@ -188,6 +188,7 @@
                       <template v-else>
                         <button class="table-btn" type="button" @click="openAircraft(aircraft.id)"><img class="btn-icon" :src="icons.open" alt="" aria-hidden="true">Abrir</button>
                         <button class="table-btn" type="button" :disabled="!isOwner" @click="startAircraftEdit(aircraft)"><img class="btn-icon" :src="icons.edit" alt="" aria-hidden="true">Editar</button>
+                        <button class="table-btn whatsapp-btn" type="button" @click="shareAircraftWhatsApp(aircraft)">WhatsApp</button>
                         <button
                           class="table-btn aircraft-download-btn"
                           type="button"
@@ -2589,6 +2590,69 @@ export default {
 
     formatMetric(value) {
       return new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value);
+    },
+
+    async shareAircraftWhatsApp(aircraft) {
+      if (!aircraft) {
+        return;
+      }
+
+      const rows = Array.isArray(aircraft.rows) ? aircraft.rows : [];
+      const critical = rows.filter((row) => this.getStatus(row) === "CRITICO").length;
+      const alert = rows.filter((row) => this.getStatus(row) === "ALERTA").length;
+      const ok = rows.filter((row) => this.getStatus(row) === "OK").length;
+      const assigned = rows.reduce((sum, row) => sum + this.rowAssignedHours(row), 0);
+      const consumed = rows.reduce((sum, row) => sum + this.rowConsumedHours(row), 0);
+      const remaining = rows.reduce((sum, row) => sum + this.rowRemainingHours(row), 0);
+      const firstDue = rows
+        .map((row) => ({ row, dueDate: parseEsDate(row.due) }))
+        .filter((entry) => entry.dueDate)
+        .sort((a, b) => a.dueDate - b.dueDate)[0];
+      const state = critical > 0 ? "CRITICO" : alert > 0 ? "ALERTA" : rows.length ? "OPERATIVO" : "SIN DATOS";
+      const alertLines = rows
+        .filter((row) => this.getStatus(row) === "CRITICO" || this.getStatus(row) === "ALERTA")
+        .slice(0, 5)
+        .map((row) => `- ${row.component || "Sin nombre"} (${row.series || "S/S"}): ${this.getStatusLabel(row)}`);
+
+      const message = [
+        "DIVMAAER - Control de Calidad",
+        `Aeronave: ${aircraft.code || "--"} - ${aircraft.name || "--"}`,
+        `Estado general: ${state}`,
+        `Componentes: ${rows.length} | OK: ${ok} | Alertas: ${alert} | Criticos: ${critical}`,
+        `TBO asignado: ${this.formatMetric(assigned)} h`,
+        `Consumido: ${this.formatMetric(consumed)} h`,
+        `Remanente: ${this.formatMetric(remaining)} h`,
+        `Proximo vencimiento: ${firstDue ? `${firstDue.row.component || "Componente"} (${firstDue.row.due})` : "--"}`,
+        aircraft.notes ? `Notas: ${aircraft.notes}` : "",
+        alertLines.length ? "Componentes en atencion:" : "",
+        ...alertLines
+      ].filter(Boolean).join("\n");
+
+      const pdf = this.createAircraftPdf(aircraft);
+      const pdfBlob = new Blob([pdf], { type: "application/pdf" });
+      const pdfName = `${sanitizeFilename(aircraft.code)}-${sanitizeFilename(aircraft.name)}.pdf`;
+
+      if (navigator.share && window.File) {
+        const pdfFile = new File([pdfBlob], pdfName, { type: "application/pdf" });
+        if (!navigator.canShare || navigator.canShare({ files: [pdfFile] })) {
+          try {
+            await navigator.share({
+              title: `Reporte ${aircraft.code || "aeronave"}`,
+              text: message,
+              files: [pdfFile]
+            });
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") {
+              return;
+            }
+          }
+        }
+      }
+
+      this.downloadAircraftPdf(aircraft);
+      window.alert("Tu navegador no permite adjuntar el PDF automaticamente a WhatsApp. Se descargo el PDF para que lo adjuntes manualmente.");
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
     },
 
     downloadAircraftExcel(aircraft) {
