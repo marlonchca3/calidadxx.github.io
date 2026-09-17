@@ -225,6 +225,54 @@
         </section>
 
         <template v-if="activeView !== 'aeronaves'">
+          <section v-if="activeView === 'buscar'" id="buscar" class="panel search-panel view">
+            <div class="search-head">
+              <div>
+                <h2>Buscar componente</h2>
+                <p class="panel-sub">Escribe el nombre del componente o el numero de serie.</p>
+              </div>
+              <span class="search-total">{{ searchResults.length }} resultado{{ searchResults.length === 1 ? "" : "s" }}</span>
+            </div>
+
+            <form class="search-form" @submit.prevent="submitComponentSearch">
+              <div class="search-field">
+                <img class="search-field-icon" :src="icons.search" alt="" aria-hidden="true">
+                <input
+                  v-model.trim="searchQuery"
+                  type="search"
+                  autocomplete="off"
+                  placeholder="Componente o numero de serie"
+                  aria-label="Buscar por componente o numero de serie"
+                  @input="searchFeedback = ''"
+                >
+              </div>
+              <button class="table-btn search-submit-btn" type="submit">
+                <img class="btn-icon" :src="icons.search" alt="" aria-hidden="true">
+                Buscar
+              </button>
+            </form>
+
+            <p v-if="searchFeedback" class="search-feedback">{{ searchFeedback }}</p>
+
+            <div v-if="searchResults.length > 0" class="search-results">
+              <button
+                v-for="result in searchResults"
+                :key="result.key"
+                class="search-result"
+                type="button"
+                @click="openSearchResult(result)"
+              >
+                <span class="component-logo" :class="result.categoryClass">{{ result.logo }}</span>
+                <span class="search-result-main">
+                  <strong>{{ result.component }}</strong>
+                  <small>{{ result.aircraftCode }} · Serie {{ result.series }}</small>
+                </span>
+                <span class="status" :class="result.statusClass">{{ result.status }}</span>
+              </button>
+            </div>
+            <p v-else-if="normalizedSearchQuery" class="empty-note">No se encontraron componentes con ese nombre o serie.</p>
+          </section>
+
           <section v-if="activeView === 'dashboard'" id="dashboard" ref="dashboard" class="grid-kpi view">
             <article
               class="kpi kpi-info kpi-clickable"
@@ -327,6 +375,7 @@
               <p class="panel-sub">Serie {{ aircraftSeries }}</p>
               <p class="plane-title">{{ currentAircraft ? currentAircraft.name : "--" }}</p>
               <ul class="meta-list">
+                <li><span>Codigo de aeronave:</span> <span>{{ currentAircraft ? currentAircraft.code : "--" }}</span></li>
                 <li><span>Horas Totales (TSN):</span> <span>{{ formatMetric(panelTotals.consumed) }} h</span></li>
                 <li><span>Vida Total Asignada:</span> <span>{{ formatMetric(panelTotals.assigned) }} h</span></li>
                 <li><span>Horas Remanentes:</span> <span>{{ formatMetric(panelTotals.remaining) }} h</span></li>
@@ -489,19 +538,19 @@
                     <th>Consumido TBO hrs</th>
                     <th>Consumido TBO años</th>
                     <th>Asignado TSN (hrs)</th>
-                    <th>Asignado TSN (años)</th>
+                    <th>Asignado TCN (años)</th>
                     <th>Consumido TSN hrs</th>
                     <th>Consumido TSN años</th>
                     <th>Remanente TBO (hrs)</th>
                     <th>Remanente TBO (años)</th>
                     <th>Remanente TSN (hrs)</th>
-                    <th>Remanente TSN (años)</th>
+                    <th>Remanente TCN (años)</th>
                     <th>Arranques TSN</th>
                     <th>Gaso-horas TSN</th>
                     <th>Arranques TBO</th>
                     <th>Gaso-horas TBO</th>
                     <th>Notas</th>
-                    <th>Vencimiento</th>
+                    <th>Vencimiento TCN</th>
                     <th>Estado</th>
                     <th>Accion</th>
                   </tr>
@@ -510,7 +559,8 @@
                   <tr
                     v-for="(row, index) in currentRows"
                     :key="`${currentAircraft.id}-${index}`"
-                    :class="{ 'dragging-row': draggingRowIndex === index }"
+                    :class="{ 'dragging-row': draggingRowIndex === index, 'search-target-row': isSearchTargetRow(index) }"
+                    :data-row-index="index"
                     @dragover.prevent
                     @drop.prevent="dropRow(index)"
                   >
@@ -529,7 +579,7 @@
                     </td>
                     <td class="sticky-component-col"><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Componente')"></div></td>
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Serie')"></td>
-                    <td><input v-model="row.manufactureDate" class="cell-input" :disabled="!isOwner" placeholder="dd/mm/aaaa" @change="saveRowFieldChange(row, 'Fecha fabricacion')"></td>
+                    <td><input v-model="row.manufactureDate" class="cell-input" :disabled="!isOwner" placeholder="dd/mm/aaaa" @change="saveRowFieldChange(row, 'Fecha fabricacion', 'tsn')"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Taller')"></td>
                     <td>
                       <div class="overhaul-combo" :class="{ open: openOverhaulMenuIndex === index }">
@@ -554,15 +604,15 @@
                         list="tsn-years-options"
                         :disabled="!isOwner"
                         @input="updateTsnDerived(row)"
-                        @change="saveRowFieldChange(row, 'Asignado TSN años', 'tsn')"
+                        @change="saveRowFieldChange(row, 'Asignado TCN años', 'tsn')"
                       >
                     </td>
                     <td><input v-model="row.consumedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Consumido TSN horas', 'tsn')"></td>
                     <td><input v-model="row.consumedTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
-                    <td><input v-model="row.remainingTboHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
-                    <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.remainingTboHours" class="cell-input numeric-input calculated-input" :class="{ 'negative-input': isNegativeTboHours(row) }" disabled readonly></td>
+                    <td><input v-model="row.remainingTboYears" class="cell-input numeric-input calculated-input" :class="{ 'negative-input': isNegativeTboYears(row) }" disabled readonly></td>
                     <td><input v-model="row.remainingTsnHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
-                    <td><input v-model="row.remainingTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
+                    <td><input v-model="row.remainingTsnYears" class="cell-input numeric-input calculated-input" :class="{ 'negative-input': isOverAssignedTcnYears(row) }" disabled readonly></td>
                     <template v-if="isApuRow(row)">
                       <td><input v-model="row.apuStartsTsn" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Arr. APU TSN" @change="saveRowFieldChange(row, 'Arranques TSN APU')"></td>
                       <td><input v-model="row.apuGasHoursTsn" class="cell-input numeric-input" :disabled="!isOwner" placeholder="Gaso-horas APU TSN" @change="saveRowFieldChange(row, 'Gaso-horas TSN APU')"></td>
@@ -576,8 +626,8 @@
                       <td><input v-model="row.gasHoursTbo" class="cell-input numeric-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Gaso-horas TBO')"></td>
                     </template>
                     <td><textarea v-model="row.notes" class="cell-input notes-input" :disabled="!isOwner" maxlength="360" placeholder="Notas del componente" @change="saveRowFieldChange(row, 'Notas')"></textarea></td>
-                    <td><input v-model="row.due" class="cell-input calculated-input" disabled readonly></td>
-                    <td><span class="status" :class="statusClass(row)">{{ getStatus(row) }}</span></td>
+                    <td><input :value="tcnDue(row)" class="cell-input calculated-input" :class="{ 'negative-input': isExpiredTcnDue(row) }" disabled readonly></td>
+                    <td><span class="status" :class="statusClass(row)">{{ getStatusLabel(row) }}</span></td>
                     <td>
                       <button class="table-btn danger-btn" type="button" :disabled="!isOwner" @click="deleteRow(index)"><img class="btn-icon" :src="icons.delete" alt="" aria-hidden="true">Eliminar</button>
                     </td>
@@ -823,6 +873,7 @@ import menuIcon from "./icons/menu.svg";
 import overhaulIcon from "./icons/overhaul.svg";
 import restoreIcon from "./icons/restaurar.svg";
 import saveIcon from "./icons/guardar.svg";
+import searchIcon from "./icons/buscar.svg";
 import serviceTimeIcon from "./icons/tiempo-servicio.svg";
 import signOutIcon from "./icons/cerrar-sesion.svg";
 import syncIcon from "./icons/sincronizacion.svg";
@@ -945,9 +996,10 @@ function normalizeRow(row) {
   const assignedTsnYears = String(row.assignedTsnYears ?? "");
   const consumedTsnHours = String(row.consumedTsnHours ?? "");
   const remainingTsnHours = formatNumberValue(parseNumeric(assignedTsnHours) - parseNumeric(consumedTsnHours));
+  const elapsedTcnYears = calculateYearsSinceDate(row.manufactureDate || row.fabricationDate || row.fechaFabricacion);
   const remainingTsnYears = isOnCondition(assignedTsnYears)
     ? "ON CONDITION"
-    : noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTsnYears) || String(row.remainingTsnYears || "");
+    : elapsedTcnYears || String(row.remainingTsnYears || "");
   const remainingTboHours = formatNumberValue(parseNumeric(assignedTboHours) - parseNumeric(consumedTboHours));
   const due = noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
   const remainingTboYears = due;
@@ -1104,6 +1156,26 @@ function calculateDueDate(overhaul, assignedTboYears) {
   return dueDate ? formatEsDate(dueDate) : "";
 }
 
+function calculateYearsSinceDate(value) {
+  const date = parseEsDate(value);
+  if (!date || date > TODAY) {
+    return "";
+  }
+
+  const elapsedMs = TODAY.getTime() - date.getTime();
+  return formatNumberValue(elapsedMs / (365.25 * 86400000));
+}
+
+function calculateTcnDueDate(manufactureDate, assignedTcnYears) {
+  if (isOnCondition(assignedTcnYears)) {
+    return "ON CONDITION";
+  }
+
+  const date = parseEsDate(manufactureDate);
+  const dueDate = date ? addTboYears(date, assignedTcnYears) : null;
+  return dueDate ? formatEsDate(dueDate) : "";
+}
+
 function sanitizePdfText(value) {
   return String(value ?? "")
     .normalize("NFD")
@@ -1202,6 +1274,10 @@ export default {
       loginEmail: "",
       loginPassword: "",
       componentAddMenuOpen: false,
+      searchQuery: "",
+      searchFeedback: "",
+      searchTargetAircraftId: "",
+      searchTargetRowIndex: null,
       dashboardDetailOpen: false,
       dashboardDetailType: "total",
       openOverhaulMenuIndex: null,
@@ -1233,6 +1309,7 @@ export default {
         overhaul: overhaulIcon,
         restore: restoreIcon,
         save: saveIcon,
+        search: searchIcon,
         serviceTime: serviceTimeIcon,
         signOut: signOutIcon,
         sync: syncIcon,
@@ -1246,6 +1323,7 @@ export default {
       menuItems: [
         { label: "Dashboard", target: "dashboard", icon: dashboardIcon },
         { label: "Aeronaves", target: "aeronaves", icon: aircraftsIcon },
+        { label: "Buscar", target: "buscar", icon: searchIcon },
         { label: "Componentes", target: "componentes", icon: componentsIcon },
         { label: "Base de datos", target: "base-datos", icon: databaseIcon },
         { label: "Alertas", target: "alertas", icon: alertsIcon },
@@ -1282,6 +1360,47 @@ export default {
 
     currentRows() {
       return this.currentAircraft ? this.currentAircraft.rows : [];
+    },
+
+    normalizedSearchQuery() {
+      return this.normalizeSearchTerm(this.searchQuery);
+    },
+
+    searchResults() {
+      const query = this.normalizedSearchQuery;
+      if (!query) {
+        return [];
+      }
+
+      return this.fleet.aircrafts.flatMap((aircraft) => (
+        (Array.isArray(aircraft.rows) ? aircraft.rows : [])
+          .map((row, index) => {
+            const component = String(row.component || "");
+            const series = String(row.series || "");
+            const normalizedComponent = this.normalizeSearchTerm(component);
+            const normalizedSeries = this.normalizeSearchTerm(series);
+
+            if (!normalizedComponent.includes(query) && !normalizedSeries.includes(query)) {
+              return null;
+            }
+
+            const status = this.getStatus(row);
+            return {
+              key: `${aircraft.id}-${index}-${component}-${series}`,
+              aircraftId: aircraft.id,
+              aircraftCode: aircraft.code || "--",
+              rowIndex: index,
+              component: component || "Sin nombre",
+              series: series || "--",
+              logo: this.componentLogo(row),
+              categoryClass: this.categoryClass(row),
+              status,
+              statusClass: this.statusClass(row),
+              exact: normalizedComponent === query || normalizedSeries === query
+            };
+          })
+          .filter(Boolean)
+      )).sort((a, b) => Number(b.exact) - Number(a.exact) || a.aircraftCode.localeCompare(b.aircraftCode));
     },
 
     aircraftChip() {
@@ -1710,6 +1829,55 @@ export default {
   },
 
   methods: {
+    normalizeSearchTerm(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    },
+
+    isSearchTargetRow(index) {
+      return this.currentAircraft
+        && this.searchTargetAircraftId === this.currentAircraft.id
+        && this.searchTargetRowIndex === index;
+    },
+
+    submitComponentSearch() {
+      if (!this.normalizedSearchQuery) {
+        this.searchFeedback = "Ingresa un componente o numero de serie para buscar.";
+        return;
+      }
+
+      const [firstResult] = this.searchResults;
+      if (!firstResult) {
+        this.searchFeedback = "No se encontro ningun componente con esos datos.";
+        return;
+      }
+
+      this.openSearchResult(firstResult);
+    },
+
+    async openSearchResult(result) {
+      if (!result || !result.aircraftId) {
+        return;
+      }
+
+      this.searchFeedback = "";
+      this.searchTargetAircraftId = result.aircraftId;
+      this.searchTargetRowIndex = result.rowIndex;
+      this.fleet.selectedId = result.aircraftId;
+      await this.persistFleet();
+      this.navigate("base-datos", "Base de datos");
+      this.$nextTick(() => {
+        const tableRow = document.querySelector(`#base-datos tr[data-row-index="${result.rowIndex}"]`);
+        if (tableRow) {
+          tableRow.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        }
+      });
+    },
+
     showPassword() {
       if (!this.authBusy) {
         this.passwordVisible = true;
@@ -2163,7 +2331,7 @@ export default {
         row.remainingTsnYears = "ON CONDITION";
         return;
       }
-      row.remainingTsnYears = isNoOverhaul(row.overhaul) ? "" : calculateDueDate(row.overhaul, row.assignedTsnYears) || "";
+      row.remainingTsnYears = calculateYearsSinceDate(row.manufactureDate) || "";
     },
 
     updateAllDerived(row) {
@@ -2478,19 +2646,19 @@ export default {
         "Consumido TBO hrs",
         "Consumido TBO anos",
         "Asignado TSN (hrs)",
-        "Asignado TSN (anos)",
+        "Asignado TCN (anos)",
         "Consumido TSN hrs",
         "Consumido TSN anos",
         "Remanente TBO (hrs)",
         "Remanente TBO (anos)",
         "Remanente TSN (hrs)",
-        "Remanente TSN (anos)",
+        "Remanente TCN (anos)",
         "Arranques TSN",
         "Gaso-horas TSN",
         "Arranques TBO",
         "Gaso-horas TBO",
         "Notas",
-        "Vencimiento",
+        "Vencimiento TCN",
         "Estado"
       ];
 
@@ -2536,7 +2704,7 @@ export default {
           usageValues.startsTbo,
           usageValues.gasTbo,
           row.notes || "--",
-          row.due || "--",
+          this.tcnDue(row),
           status
         ];
 
@@ -2672,7 +2840,7 @@ export default {
           ["Fecha fabricacion", row.manufactureDate || "--"],
           ["Taller", row.workshop || "--"],
           ["Ultimo Overhaul", row.overhaul || "--"],
-          ["Vencimiento", row.due || "--"],
+          ["Vencimiento TCN", this.tcnDue(row)],
           ["Asignado TBO hrs", row.assignedTboHours || row.assigned || "--"],
           ["Asignado TBO anos", row.assignedTboYears || "--"],
           ["Consumido TBO hrs", row.consumedTboHours || row.consumed || "--"],
@@ -2680,11 +2848,11 @@ export default {
           ["Remanente TBO hrs", row.remainingTboHours || row.remaining || "--"],
           ["Remanente TBO anos", row.remainingTboYears || "--"],
           ["Asignado TSN hrs", row.assignedTsnHours || "--"],
-          ["Asignado TSN anos", row.assignedTsnYears || "--"],
+          ["Asignado TCN anos", row.assignedTsnYears || "--"],
           ["Consumido TSN hrs", row.consumedTsnHours || "--"],
           ["Consumido TSN anos", row.consumedTsnYears || "--"],
           ["Remanente TSN hrs", row.remainingTsnHours || "--"],
-          ["Remanente TSN anos", row.remainingTsnYears || "--"],
+          ["Remanente TCN anos", row.remainingTsnYears || "--"],
           [usageLabels.startsTsn, usageValues.startsTsn],
           [usageLabels.gasTsn, usageValues.gasTsn],
           [usageLabels.startsTbo, usageValues.startsTbo],
@@ -2789,6 +2957,38 @@ export default {
       return `${Math.round((value / total) * 100)}%`;
     },
 
+    isNegativeTboYears(row) {
+      const value = String(row.remainingTboYears || "").trim();
+      const date = parseEsDate(value);
+      if (date) {
+        return date < TODAY;
+      }
+      return parseNumeric(value) < 0;
+    },
+
+    isNegativeTboHours(row) {
+      return this.rowRemainingHours(row) < 0;
+    },
+
+    tcnDue(row) {
+      return calculateTcnDueDate(row.manufactureDate, row.assignedTsnYears) || "--";
+    },
+
+    isExpiredTcnDue(row) {
+      const dueDate = parseEsDate(calculateTcnDueDate(row.manufactureDate, row.assignedTsnYears));
+      return Boolean(dueDate && dueDate < TODAY);
+    },
+
+    isOverAssignedTcnYears(row) {
+      if (isOnCondition(row.assignedTsnYears)) {
+        return false;
+      }
+
+      const assignedYears = parseNumeric(row.assignedTsnYears);
+      const elapsedYears = parseNumeric(calculateYearsSinceDate(row.manufactureDate));
+      return assignedYears > 0 && elapsedYears > assignedYears;
+    },
+
     getStatus(row) {
       if (isNoOverhaul(row.overhaul)) {
         return "CRITICO";
@@ -2810,6 +3010,30 @@ export default {
       }
 
       return "OK";
+    },
+
+    getStatusReason(row) {
+      if (isNoOverhaul(row.overhaul)) {
+        return "sin overhaul";
+      }
+
+      const remaining = this.rowRemainingHours(row);
+      if (remaining < 0) {
+        return "TBO hrs vencido";
+      }
+
+      const dueDate = parseEsDate(row.due);
+      if (dueDate && dueDate < TODAY) {
+        return "fecha vencida";
+      }
+
+      return "";
+    },
+
+    getStatusLabel(row) {
+      const status = this.getStatus(row);
+      const reason = status === "CRITICO" ? this.getStatusReason(row) : "";
+      return reason ? `${status}: ${reason}` : status;
     },
 
     statusClass(row) {
@@ -2847,7 +3071,7 @@ export default {
       }
       this.fleet.selectedId = aircraftId;
       await this.persistFleet();
-      this.navigate("dashboard");
+      this.navigate("base-datos", "Base de datos");
     },
 
     startAircraftEdit(aircraft) {
@@ -3030,7 +3254,7 @@ export default {
         remainingTboHours: "0",
         remainingTboYears: "0",
         remainingTsnHours: "0",
-        remainingTsnYears: calculateDueDate(formatEsDate(TODAY), "1"),
+        remainingTsnYears: "",
         motorStartsTsn: "",
         gasHoursTsn: "",
         motorStartsTbo: "",
