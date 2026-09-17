@@ -226,7 +226,14 @@
 
         <template v-if="activeView !== 'aeronaves'">
           <section v-if="activeView === 'dashboard'" id="dashboard" ref="dashboard" class="grid-kpi view">
-            <article class="kpi kpi-info">
+            <article
+              class="kpi kpi-info kpi-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('total')"
+              @keydown.enter.prevent="openDashboardDetail('total')"
+              @keydown.space.prevent="openDashboardDetail('total')"
+            >
               <div class="kpi-head">
                 <p class="kpi-title">Total Componentes</p>
                 <span class="kpi-icon" aria-hidden="true"><img :src="icons.components" alt=""></span>
@@ -236,7 +243,14 @@
               <div class="kpi-progress"><span style="width: 100%"></span></div>
             </article>
 
-            <article class="kpi kpi-danger">
+            <article
+              class="kpi kpi-danger kpi-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('critical')"
+              @keydown.enter.prevent="openDashboardDetail('critical')"
+              @keydown.space.prevent="openDashboardDetail('critical')"
+            >
               <div class="kpi-head">
                 <p class="kpi-title">Críticos / Overhaul</p>
                 <span class="kpi-icon" aria-hidden="true"><img :src="icons.overhaul" alt=""></span>
@@ -246,7 +260,14 @@
               <div class="kpi-progress"><span :style="{ width: pct(metrics.critical) }"></span></div>
             </article>
 
-            <article class="kpi kpi-warn">
+            <article
+              class="kpi kpi-warn kpi-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('alert')"
+              @keydown.enter.prevent="openDashboardDetail('alert')"
+              @keydown.space.prevent="openDashboardDetail('alert')"
+            >
               <div class="kpi-head">
                 <p class="kpi-title">Alertas Preventivas</p>
                 <span class="kpi-icon" aria-hidden="true"><img :src="icons.alerts" alt=""></span>
@@ -256,7 +277,14 @@
               <div class="kpi-progress"><span :style="{ width: pct(metrics.alert) }"></span></div>
             </article>
 
-            <article class="kpi kpi-ok">
+            <article
+              class="kpi kpi-ok kpi-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('ok')"
+              @keydown.enter.prevent="openDashboardDetail('ok')"
+              @keydown.space.prevent="openDashboardDetail('ok')"
+            >
               <div class="kpi-head">
                 <p class="kpi-title">En Condiciones</p>
                 <span class="kpi-icon" aria-hidden="true"><img :src="icons.serviceTime" alt=""></span>
@@ -266,7 +294,14 @@
               <div class="kpi-progress"><span :style="{ width: pct(metrics.ok) }"></span></div>
             </article>
 
-            <article class="kpi risk-card">
+            <article
+              class="kpi risk-card kpi-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('risk')"
+              @keydown.enter.prevent="openDashboardDetail('risk')"
+              @keydown.space.prevent="openDashboardDetail('risk')"
+            >
               <div class="kpi-risk">
                 <div class="ring" :style="riskRingStyle"><span>{{ metrics.risk }}%</span></div>
                 <div class="risk-copy">
@@ -280,7 +315,14 @@
           </section>
 
           <section v-if="activeView === 'dashboard'" id="main-grid-view" class="main-grid view">
-            <article class="panel">
+            <article
+              class="panel panel-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('total')"
+              @keydown.enter.prevent="openDashboardDetail('total')"
+              @keydown.space.prevent="openDashboardDetail('total')"
+            >
               <h2>Aeronave Seleccionada</h2>
               <p class="panel-sub">Serie {{ aircraftSeries }}</p>
               <p class="plane-title">{{ currentAircraft ? currentAircraft.name : "--" }}</p>
@@ -295,7 +337,14 @@
               <div class="progress"><div :style="{ width: `${consumedPct}%` }"></div></div>
             </article>
 
-            <article class="panel">
+            <article
+              class="panel panel-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('total')"
+              @keydown.enter.prevent="openDashboardDetail('total')"
+              @keydown.space.prevent="openDashboardDetail('total')"
+            >
               <h2>Consumo de Recursos (TSO / Arranques)</h2>
               <p class="panel-sub">Comparación: consumido vs remanente por componente</p>
               <div class="chart-legend" aria-label="Leyenda de consumo">
@@ -323,7 +372,14 @@
               </div>
             </article>
 
-            <article class="panel">
+            <article
+              class="panel panel-clickable"
+              role="button"
+              tabindex="0"
+              @click="openDashboardDetail('due')"
+              @keydown.enter.prevent="openDashboardDetail('due')"
+              @keydown.space.prevent="openDashboardDetail('due')"
+            >
               <h2 class="icon-heading"><img :src="icons.due" alt="" aria-hidden="true">Proximos Vencimientos</h2>
               <p class="panel-sub">Control calendario</p>
               <ul class="events">
@@ -419,11 +475,11 @@
             </p>
 
             <div class="table-wrap">
-              <table>
+              <table class="components-table">
                 <thead>
                   <tr>
-                    <th>Orden</th>
-                    <th>Componente</th>
+                    <th class="sticky-order-col">Orden</th>
+                    <th class="sticky-component-col">Componente</th>
                     <th>Serie</th>
                     <th>Fecha fabricacion</th>
                     <th>Taller</th>
@@ -458,7 +514,7 @@
                     @dragover.prevent
                     @drop.prevent="dropRow(index)"
                   >
-                    <td class="row-drag-cell">
+                    <td class="row-drag-cell sticky-order-col">
                       <button
                         class="row-drag-handle"
                         type="button"
@@ -471,7 +527,7 @@
                         ⋮⋮
                       </button>
                     </td>
-                    <td><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Componente')"></div></td>
+                    <td class="sticky-component-col"><div class="table-component"><span class="component-logo" :class="categoryClass(row)">{{ componentLogo(row) }}</span><input v-model="row.component" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Componente')"></div></td>
                     <td><input v-model="row.series" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Serie')"></td>
                     <td><input v-model="row.manufactureDate" class="cell-input" :disabled="!isOwner" placeholder="dd/mm/aaaa" @change="saveRowFieldChange(row, 'Fecha fabricacion')"></td>
                     <td><input v-model="row.workshop" class="cell-input" :disabled="!isOwner" @change="saveRowFieldChange(row, 'Taller')"></td>
@@ -491,7 +547,16 @@
                     <td><input v-model="row.consumedTboHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTboDerived(row)" @change="saveRowFieldChange(row, 'Consumido TBO horas', 'tbo')"></td>
                     <td><input v-model="row.consumedTboYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.assignedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Asignado TSN horas', 'tsn')"></td>
-                    <td><input v-model="row.assignedTsnYears" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Asignado TSN años', 'tsn')"></td>
+                    <td>
+                      <input
+                        v-model="row.assignedTsnYears"
+                        class="cell-input numeric-input"
+                        list="tsn-years-options"
+                        :disabled="!isOwner"
+                        @input="updateTsnDerived(row)"
+                        @change="saveRowFieldChange(row, 'Asignado TSN años', 'tsn')"
+                      >
+                    </td>
                     <td><input v-model="row.consumedTsnHours" class="cell-input numeric-input" :disabled="!isOwner" @input="updateTsnDerived(row)" @change="saveRowFieldChange(row, 'Consumido TSN horas', 'tsn')"></td>
                     <td><input v-model="row.consumedTsnYears" class="cell-input numeric-input calculated-input" disabled readonly></td>
                     <td><input v-model="row.remainingTboHours" class="cell-input numeric-input calculated-input" disabled readonly></td>
@@ -654,6 +719,78 @@
           </section>
         </template>
 
+        <datalist id="tsn-years-options">
+          <option value="ON CONDITION"></option>
+        </datalist>
+
+        <div v-if="dashboardDetailOpen" class="dashboard-detail-overlay" @click.self="closeDashboardDetail">
+          <section class="dashboard-detail-modal" role="dialog" aria-modal="true" :aria-labelledby="'dashboard-detail-title'">
+            <div class="dashboard-detail-head">
+              <div>
+                <p class="panel-sub">{{ currentAircraft ? currentAircraft.code : "--" }}</p>
+                <h2 id="dashboard-detail-title">{{ dashboardDetailTitle }}</h2>
+              </div>
+              <button class="detail-close-btn" type="button" aria-label="Cerrar detalle" @click="closeDashboardDetail">×</button>
+            </div>
+
+            <div class="dashboard-detail-summary">
+              <span>Componentes: <strong>{{ dashboardDetailRows.length }}</strong></span>
+              <span>Críticos: <strong>{{ metrics.critical }}</strong></span>
+              <span>Alertas: <strong>{{ metrics.alert }}</strong></span>
+              <span>Operativos: <strong>{{ metrics.ok }}</strong></span>
+            </div>
+
+            <div class="dashboard-component-list">
+              <h3>Componentes</h3>
+              <div v-if="dashboardDetailRows.length > 0" class="dashboard-component-tags">
+                <span
+                  v-for="entry in dashboardDetailRows"
+                  :key="`name-${entry.key}`"
+                  class="dashboard-component-tag"
+                  :class="entry.statusClass"
+                >
+                  {{ entry.component }}
+                </span>
+              </div>
+              <p v-else class="empty-note">No hay componentes en esta caja.</p>
+            </div>
+
+            <div class="table-wrap detail-table-wrap">
+              <table class="dashboard-detail-table">
+                <thead>
+                  <tr>
+                    <th>Componente</th>
+                    <th>Serie</th>
+                    <th>Taller</th>
+                    <th>Overhaul</th>
+                    <th>Vencimiento</th>
+                    <th>Asignado</th>
+                    <th>Consumido</th>
+                    <th>Remanente</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="entry in dashboardDetailRows" :key="entry.key">
+                    <td>{{ entry.component }}</td>
+                    <td>{{ entry.series }}</td>
+                    <td>{{ entry.workshop }}</td>
+                    <td>{{ entry.overhaul }}</td>
+                    <td>{{ entry.due }}</td>
+                    <td>{{ entry.assigned }}</td>
+                    <td>{{ entry.consumed }}</td>
+                    <td>{{ entry.remaining }}</td>
+                    <td><span class="status" :class="entry.statusClass">{{ entry.status }}</span></td>
+                  </tr>
+                  <tr v-if="dashboardDetailRows.length === 0">
+                    <td colspan="9" class="empty-cell">No hay datos para mostrar.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
         <footer>
           {{ new Date().getFullYear() }} Sistema de Gestion de Recursos Aeronauticos · {{ currentAircraft ? currentAircraft.code : "PNP-501" }} · Todos los derechos reservados
         </footer>
@@ -776,6 +913,10 @@ function isNoOverhaul(value) {
   return String(value || "").trim().toUpperCase() === "NO OVERHAUL";
 }
 
+function isOnCondition(value) {
+  return String(value || "").trim().toUpperCase() === "ON CONDITION";
+}
+
 function calculateConsumedYears(overhaul) {
   if (isNoOverhaul(overhaul)) {
     return "0";
@@ -804,7 +945,9 @@ function normalizeRow(row) {
   const assignedTsnYears = String(row.assignedTsnYears ?? "");
   const consumedTsnHours = String(row.consumedTsnHours ?? "");
   const remainingTsnHours = formatNumberValue(parseNumeric(assignedTsnHours) - parseNumeric(consumedTsnHours));
-  const remainingTsnYears = noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTsnYears) || String(row.remainingTsnYears || "");
+  const remainingTsnYears = isOnCondition(assignedTsnYears)
+    ? "ON CONDITION"
+    : noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTsnYears) || String(row.remainingTsnYears || "");
   const remainingTboHours = formatNumberValue(parseNumeric(assignedTboHours) - parseNumeric(consumedTboHours));
   const due = noOverhaul ? "" : calculateDueDate(row.overhaul, assignedTboYears) || String(row.due || "");
   const remainingTboYears = due;
@@ -1059,6 +1202,8 @@ export default {
       loginEmail: "",
       loginPassword: "",
       componentAddMenuOpen: false,
+      dashboardDetailOpen: false,
+      dashboardDetailType: "total",
       openOverhaulMenuIndex: null,
       passwordVisible: false,
       loginThreeCleanup: null,
@@ -1476,6 +1621,66 @@ export default {
         ...item,
         typeLabel: item.type === "aircraft" ? "Aeronave" : "Componente"
       }));
+    },
+
+    dashboardDetailTitle() {
+      const titles = {
+        total: "Total de Componentes",
+        critical: "Críticos / Overhaul",
+        alert: "Alertas Preventivas",
+        ok: "En Condiciones",
+        risk: "Riesgo Global",
+        due: "Próximos Vencimientos"
+      };
+      return titles[this.dashboardDetailType] || titles.total;
+    },
+
+    dashboardDetailRows() {
+      const selectedType = this.dashboardDetailType;
+      return this.currentRows
+        .map((row, index) => {
+          const status = this.getStatus(row);
+          const dueDate = parseEsDate(row.due);
+          return {
+            key: `${row.component}-${row.series}-${index}`,
+            row,
+            dueDate,
+            status,
+            component: row.component || "Sin nombre",
+            series: row.series || "--",
+            workshop: row.workshop || "--",
+            overhaul: row.overhaul || "--",
+            due: row.due || "--",
+            assigned: `${this.formatMetric(this.rowAssignedHours(row))} h`,
+            consumed: `${this.formatMetric(this.rowConsumedHours(row))} h`,
+            remaining: `${this.formatMetric(this.rowRemainingHours(row))} h`,
+            statusClass: this.statusClass(row)
+          };
+        })
+        .filter((entry) => {
+          if (selectedType === "critical") {
+            return entry.status === "CRITICO";
+          }
+          if (selectedType === "alert") {
+            return entry.status === "ALERTA";
+          }
+          if (selectedType === "ok") {
+            return entry.status === "OK";
+          }
+          if (selectedType === "risk") {
+            return entry.status === "CRITICO" || entry.status === "ALERTA";
+          }
+          if (selectedType === "due") {
+            return Boolean(entry.dueDate);
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          if (selectedType !== "due") {
+            return 0;
+          }
+          return a.dueDate - b.dueDate;
+        });
     }
   },
 
@@ -1513,6 +1718,15 @@ export default {
 
     hidePassword() {
       this.passwordVisible = false;
+    },
+
+    openDashboardDetail(type) {
+      this.dashboardDetailType = type;
+      this.dashboardDetailOpen = true;
+    },
+
+    closeDashboardDetail() {
+      this.dashboardDetailOpen = false;
     },
 
     initLoginThreeBackground() {
@@ -1944,6 +2158,11 @@ export default {
       const remainingHours = parseNumeric(row.assignedTsnHours) - parseNumeric(row.consumedTsnHours);
       row.consumedTsnYears = consumedDate;
       row.remainingTsnHours = formatNumberValue(remainingHours);
+      if (isOnCondition(row.assignedTsnYears)) {
+        row.assignedTsnYears = "ON CONDITION";
+        row.remainingTsnYears = "ON CONDITION";
+        return;
+      }
       row.remainingTsnYears = isNoOverhaul(row.overhaul) ? "" : calculateDueDate(row.overhaul, row.assignedTsnYears) || "";
     },
 
